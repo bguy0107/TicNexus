@@ -2,6 +2,9 @@ import { betterAuth } from "better-auth"
 import { prismaAdapter } from "better-auth/adapters/prisma"
 import { db } from "./db"
 
+const appUrl = process.env.BETTER_AUTH_URL ?? "http://localhost:3000"
+const isHttps = appUrl.startsWith("https://")
+
 export const auth = betterAuth({
   database: prismaAdapter(db, {
     provider: "postgresql",
@@ -20,9 +23,7 @@ export const auth = betterAuth({
       maxAge: 60 * 5,
     },
   },
-  trustedOrigins: process.env.BETTER_AUTH_URL
-    ? [process.env.BETTER_AUTH_URL]
-    : ["http://localhost:3000"],
+  trustedOrigins: [appUrl],
   user: {
     additionalFields: {
       firstName: { type: "string", required: true },
@@ -34,11 +35,11 @@ export const auth = betterAuth({
   },
   advanced: {
     defaultCookieAttributes: {
-      secure: process.env.NODE_ENV === "production",
+      secure: isHttps,
       httpOnly: true,
       sameSite: "lax",
     },
-    useSecureCookies: process.env.NODE_ENV === "production",
+    useSecureCookies: isHttps,
   },
 })
 
