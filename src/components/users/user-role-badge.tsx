@@ -1,4 +1,3 @@
-import { Badge } from "@/components/ui/badge"
 import { getRoleLabel } from "@/lib/permissions"
 import type { Role } from "@prisma/client"
 
