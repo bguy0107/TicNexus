@@ -58,7 +58,7 @@ export function UserTable() {
         <InviteUserDialog actorRole={actorRole} onSuccess={fetchUsers} />
       </div>
 
-      <div className="rounded-md border bg-white">
+      <div className="rounded-md border bg-background">
         <Table>
           <TableHeader>
             <TableRow>

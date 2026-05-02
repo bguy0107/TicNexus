@@ -31,16 +31,16 @@ export function Header({ firstName, lastName, email, role }: HeaderProps) {
   }
 
   return (
-    <header className="bg-white border-b h-16 flex items-center justify-between px-6 md:pl-6">
+    <header className="bg-background border-b h-16 flex items-center justify-between px-6 md:pl-6">
       <div className="flex items-center gap-2 md:hidden">
-        <span className="font-bold text-lg text-slate-900">TicNexus</span>
+        <span className="font-bold text-lg text-foreground">TicNexus</span>
       </div>
       <div className="flex-1" />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button className="flex items-center gap-2 rounded-md p-1 hover:bg-slate-100 transition-colors">
+          <button className="flex items-center gap-2 rounded-md p-1 hover:bg-accent transition-colors">
             <Avatar className="h-8 w-8">
-              <AvatarFallback className="bg-slate-800 text-white text-xs">
+              <AvatarFallback className="bg-secondary text-secondary-foreground text-xs">
                 {getInitials(firstName, lastName)}
               </AvatarFallback>
             </Avatar>

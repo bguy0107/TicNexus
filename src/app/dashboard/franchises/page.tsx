@@ -6,7 +6,7 @@ export default async function FranchisesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Franchises</h1>
+        <h1 className="text-2xl font-bold text-foreground">Franchises</h1>
         <p className="text-muted-foreground">Manage franchise organizations</p>
       </div>
       <FranchiseTable />

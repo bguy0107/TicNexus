@@ -7,7 +7,6 @@ import {
   Building2,
   MapPin,
   LayoutDashboard,
-  Settings,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Role } from "@prisma/client"
@@ -32,9 +31,9 @@ export function Sidebar({ userRole }: SidebarProps) {
 
   return (
     <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 z-50">
-      <div className="flex flex-col flex-grow bg-slate-900 overflow-y-auto">
+      <div className="flex flex-col flex-grow bg-[#0a0a0a] overflow-y-auto border-r border-border">
         <div className="flex items-center h-16 flex-shrink-0 px-6">
-          <span className="text-white font-bold text-xl tracking-tight">TicNexus</span>
+          <span className="text-foreground font-bold text-xl tracking-tight">TicNexus</span>
         </div>
         <nav className="flex-1 px-4 py-4 space-y-1">
           {visibleItems.map((item) => {
@@ -47,8 +46,8 @@ export function Sidebar({ userRole }: SidebarProps) {
                 className={cn(
                   "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
                   isActive
-                    ? "bg-slate-700 text-white"
-                    : "text-slate-300 hover:bg-slate-700 hover:text-white"
+                    ? "bg-accent text-accent-foreground"
+                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                 )}
               >
                 <Icon className="h-5 w-5 flex-shrink-0" />
