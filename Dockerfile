@@ -29,10 +29,10 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Prisma client and migrations
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
+# Full node_modules for prisma migrate deploy — avoids brittle transitive dep enumeration
+# (@prisma/config → effect → @standard-schema/spec etc.)
+# The standalone Next.js app self-bundles what it needs; this is only for entrypoint migrations.
+COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/prisma ./prisma
 
 COPY entrypoint.sh ./entrypoint.sh
