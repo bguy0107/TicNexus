@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { auth } from "@/lib/auth"
+import { getApiSession } from "@/lib/session"
 import { db } from "@/lib/db"
 import { sendInvitationEmail } from "@/lib/email"
 import { createAuditLog } from "@/lib/audit"
@@ -16,7 +16,7 @@ const schema = z.object({
 })
 
 export async function POST(request: NextRequest) {
-  const session = await auth.api.getSession({ headers: request.headers })
+  const session = await getApiSession(request.headers)
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   const actorRole = session.user.role as Role
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
-  const session = await auth.api.getSession({ headers: request.headers })
+  const session = await getApiSession(request.headers)
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   const invitations = await db.invitation.findMany({

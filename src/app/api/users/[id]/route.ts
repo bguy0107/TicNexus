@@ -1,19 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
-import { auth } from "@/lib/auth"
+import { getApiSession } from "@/lib/session"
 import { db } from "@/lib/db"
 import { createAuditLog } from "@/lib/audit"
 import { isHigherRole } from "@/lib/permissions"
 import { getIpFromRequest } from "@/lib/utils"
 import type { Role } from "@prisma/client"
 
-async function getAuthorizedSession(request: NextRequest) {
-  const session = await auth.api.getSession({ headers: request.headers })
-  if (!session) return null
-  return session
-}
-
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const session = await getAuthorizedSession(request)
+  const session = await getApiSession(request.headers)
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   const { id } = await params
@@ -32,7 +26,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 }
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const session = await getAuthorizedSession(request)
+  const session = await getApiSession(request.headers)
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   const { id } = await params
@@ -73,7 +67,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 }
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const session = await getAuthorizedSession(request)
+  const session = await getApiSession(request.headers)
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   const { id } = await params

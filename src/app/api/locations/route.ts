@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { auth } from "@/lib/auth"
+import { getApiSession } from "@/lib/session"
 import { db } from "@/lib/db"
 import { createAuditLog } from "@/lib/audit"
 import { hasPermission } from "@/lib/permissions"
@@ -8,7 +8,7 @@ import { z } from "zod"
 import type { Role } from "@prisma/client"
 
 export async function GET(request: NextRequest) {
-  const session = await auth.api.getSession({ headers: request.headers })
+  const session = await getApiSession(request.headers)
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   const role = session.user.role as Role
@@ -55,7 +55,7 @@ const createSchema = z.object({
 })
 
 export async function POST(request: NextRequest) {
-  const session = await auth.api.getSession({ headers: request.headers })
+  const session = await getApiSession(request.headers)
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   const role = session.user.role as Role
