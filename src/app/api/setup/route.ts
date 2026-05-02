@@ -41,6 +41,8 @@ export async function POST(request: NextRequest) {
       email,
       password,
       name: `${firstName} ${lastName}`,
+      firstName,
+      lastName,
     },
   })
 

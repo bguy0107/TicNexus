@@ -54,6 +54,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       email: invitation.email,
       password,
       name: `${firstName} ${lastName}`,
+      firstName,
+      lastName,
     },
   })
 

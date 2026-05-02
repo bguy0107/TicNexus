@@ -1,5 +1,6 @@
 import { db } from "./db"
 import type { AuditAction } from "@prisma/client"
+import type { InputJsonValue } from "@prisma/client/runtime/library"
 
 export async function createAuditLog({
   actorId,
@@ -22,7 +23,7 @@ export async function createAuditLog({
       action,
       entityType,
       entityId,
-      changes: changes ?? undefined,
+      changes: changes as InputJsonValue | undefined,
       ipAddress,
     },
   })
