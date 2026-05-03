@@ -22,7 +22,8 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/components/ui/use-toast"
 import { X } from "lucide-react"
-import type { LocationWithDetails } from "@/types"
+import { isHigherRole } from "@/lib/permissions"
+import type { LocationWithDetails, Role } from "@/types"
 
 interface AssignedUser {
   id: string
@@ -57,6 +58,7 @@ interface AllUser {
 
 interface EditLocationDialogProps {
   location: LocationWithDetails
+  actorRole: Role
   open: boolean
   onOpenChange: (open: boolean) => void
   onSuccess: () => void
@@ -64,6 +66,7 @@ interface EditLocationDialogProps {
 
 export function EditLocationDialog({
   location,
+  actorRole,
   open,
   onOpenChange,
   onSuccess,
@@ -98,7 +101,10 @@ export function EditLocationDialog({
       setCurrentUserIds(locData.userLocations.map((ul: { user: AssignedUser }) => ul.user.id))
       setAllFranchises(franData.franchises ?? [])
       setAllUsers(
-        (usersData.users ?? []).filter((u: AllUser & { deletedAt: unknown }) => !u.deletedAt)
+        (usersData.users ?? []).filter(
+          (u: AllUser & { deletedAt: unknown }) =>
+            !u.deletedAt && isHigherRole(actorRole, u.role as Role)
+        )
       )
       setLoadingDetail(false)
     })
@@ -256,7 +262,10 @@ export function EditLocationDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={saving || loadingDetail || !name.trim() || !locationNumber.trim()}>
+          <Button
+            onClick={handleSave}
+            disabled={saving || loadingDetail || !name.trim() || !locationNumber.trim()}
+          >
             {saving ? "Saving…" : "Save changes"}
           </Button>
         </DialogFooter>

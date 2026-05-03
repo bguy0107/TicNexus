@@ -10,7 +10,7 @@ import {
   getSupervisorLocationIds,
 } from "@/lib/scope"
 import { getIpFromRequest } from "@/lib/utils"
-import type { Role } from "@prisma/client"
+import type { Role, Department } from "@prisma/client"
 
 const userSelect = {
   id: true,
@@ -19,6 +19,7 @@ const userSelect = {
   name: true,
   email: true,
   role: true,
+  department: true,
   createdAt: true,
   deletedAt: true,
   userFranchises: { select: { franchise: { select: { id: true, name: true } } } },
@@ -89,11 +90,28 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     firstName,
     lastName,
     role,
+    department,
     addLocationIds,
     removeLocationIds,
     addFranchiseIds,
     removeFranchiseIds,
   } = body
+
+  const effectiveRole: Role = role !== undefined ? (role as Role) : (target.role as Role)
+  if (effectiveRole === "TECHNICIAN") {
+    const effectiveDept = department ?? target.department
+    if (!effectiveDept) {
+      return NextResponse.json(
+        { error: "Department is required for Technician users" },
+        { status: 400 }
+      )
+    }
+  }
+
+  const validDepartments: Department[] = ["IT", "MAINTENANCE"]
+  if (department !== undefined && !validDepartments.includes(department as Department)) {
+    return NextResponse.json({ error: "Invalid department" }, { status: 400 })
+  }
 
   // Role change: requires user:update:role and the new role must be one actor can create
   if (role !== undefined && role !== target.role) {
@@ -115,6 +133,12 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if (hasAssignmentChanges) {
     if (!hasPermission(actorRole, "user:update:assignments")) {
       return NextResponse.json({ error: "Forbidden: cannot modify assignments" }, { status: 403 })
+    }
+    if (!isHigherRole(actorRole, target.role as Role)) {
+      return NextResponse.json(
+        { error: "Forbidden: cannot assign users of equal or higher rank" },
+        { status: 403 }
+      )
     }
 
     if (actorRole === "FRANCHISE_MANAGER" && addLocationIds?.length) {
@@ -161,6 +185,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     before.role = target.role
     after.role = role
     userUpdates.role = role
+  }
+  if (department !== undefined && department !== target.department) {
+    before.department = target.department
+    after.department = department
+    userUpdates.department = department
   }
 
   const updatedUser = await db.$transaction(async (tx) => {

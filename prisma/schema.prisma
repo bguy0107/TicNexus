@@ -15,6 +15,11 @@ enum Role {
   STORE_USER
 }
 
+enum Department {
+  IT
+  MAINTENANCE
+}
+
 enum AuditAction {
   CREATE
   UPDATE
@@ -40,9 +45,10 @@ model User {
   updatedAt     DateTime  @updatedAt
 
   // Custom fields
-  firstName     String    @default("")
-  lastName      String    @default("")
-  role          Role      @default(STORE_USER)
+  firstName     String     @default("")
+  lastName      String     @default("")
+  role          Role       @default(STORE_USER)
+  department    Department?
   deletedAt     DateTime?
   createdById   String?
 
@@ -155,16 +161,17 @@ model UserLocation {
 }
 
 model Invitation {
-  id          String    @id @default(cuid())
+  id          String      @id @default(cuid())
   email       String
   role        Role
-  token       String    @unique @default(cuid())
+  department  Department?
+  token       String      @unique @default(cuid())
   franchiseId String?
   locationId  String?
   invitedById String
   expiresAt   DateTime
   acceptedAt  DateTime?
-  createdAt   DateTime  @default(now())
+  createdAt   DateTime    @default(now())
 
   franchise Franchise? @relation(fields: [franchiseId], references: [id])
   location  Location?  @relation(fields: [locationId], references: [id])

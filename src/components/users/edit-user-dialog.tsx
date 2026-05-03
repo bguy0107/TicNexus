@@ -21,7 +21,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/components/ui/use-toast"
 import { X } from "lucide-react"
-import type { UserWithRelations, Role } from "@/types"
+import type { UserWithRelations, Role, Department } from "@/types"
 
 const ALL_ROLES: { value: Role; label: string }[] = [
   { value: "ADMIN", label: "Admin" },
@@ -53,6 +53,7 @@ export function EditUserDialog({ user, open, onOpenChange, onSuccess }: EditUser
   const [firstName, setFirstName] = useState(user.firstName)
   const [lastName, setLastName] = useState(user.lastName)
   const [role, setRole] = useState<Role>(user.role)
+  const [department, setDepartment] = useState<Department | null>(user.department)
   const [allFranchises, setAllFranchises] = useState<Franchise[]>([])
   const [allLocations, setAllLocations] = useState<Location[]>([])
   const [currentFranchiseIds, setCurrentFranchiseIds] = useState<string[]>([])
@@ -65,6 +66,7 @@ export function EditUserDialog({ user, open, onOpenChange, onSuccess }: EditUser
     setFirstName(user.firstName)
     setLastName(user.lastName)
     setRole(user.role)
+    setDepartment(user.department)
     setCurrentFranchiseIds(user.userFranchises.map((uf) => uf.franchise.id))
     setCurrentLocationIds(user.userLocations.map((ul) => ul.location.id))
     fetch("/api/franchises")
@@ -92,6 +94,7 @@ export function EditUserDialog({ user, open, onOpenChange, onSuccess }: EditUser
     if (firstName !== user.firstName) body.firstName = firstName
     if (lastName !== user.lastName) body.lastName = lastName
     if (role !== user.role) body.role = role
+    if (department !== user.department) body.department = department
     if (addFranchiseIds.length) body.addFranchiseIds = addFranchiseIds
     if (removeFranchiseIds.length) body.removeFranchiseIds = removeFranchiseIds
     if (addLocationIds.length) body.addLocationIds = addLocationIds
@@ -161,6 +164,24 @@ export function EditUserDialog({ user, open, onOpenChange, onSuccess }: EditUser
               </SelectContent>
             </Select>
           </div>
+
+          {role === "TECHNICIAN" && (
+            <div className="space-y-2">
+              <Label>Department</Label>
+              <Select
+                value={department ?? ""}
+                onValueChange={(v) => setDepartment(v as Department)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select department" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="IT">IT</SelectItem>
+                  <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label>Franchise assignments</Label>

@@ -142,7 +142,9 @@ async function seed() {
         where: { name: loc.name, franchiseId: franchise.id, deletedAt: null },
       })
       if (!existing) {
-        await db.location.create({ data: { name: loc.name, locationNumber: loc.locationNumber, franchiseId: franchise.id } })
+        await db.location.create({
+          data: { name: loc.name, locationNumber: loc.locationNumber, franchiseId: franchise.id },
+        })
         console.log(`    created location   ${loc.name}`)
       } else {
         console.log(`    skip  location     ${loc.name} (already exists)`)

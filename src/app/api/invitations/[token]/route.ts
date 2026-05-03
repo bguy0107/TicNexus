@@ -111,6 +111,7 @@ export async function POST(
       firstName,
       lastName,
       role: invitation.role,
+      department: invitation.department ?? null,
       emailVerified: true,
       createdById: invitation.invitedById,
     },

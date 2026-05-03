@@ -107,7 +107,12 @@ export function EditFranchiseDialog({
     if (!newLocName.trim() || !newLocNumber.trim()) return
     setNewLocations((prev) => [
       ...prev,
-      { tempId: crypto.randomUUID(), name: newLocName.trim(), locationNumber: newLocNumber.trim(), address: newLocAddress.trim() },
+      {
+        tempId: crypto.randomUUID(),
+        name: newLocName.trim(),
+        locationNumber: newLocNumber.trim(),
+        address: newLocAddress.trim(),
+      },
     ])
     setNewLocName("")
     setNewLocNumber("")

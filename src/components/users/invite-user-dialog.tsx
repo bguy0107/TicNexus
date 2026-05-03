@@ -34,12 +34,18 @@ const INVITABLE_ROLES: { value: Role; label: string }[] = [
   { value: "STORE_USER", label: "Store User" },
 ]
 
-const schema = z.object({
-  email: z.string().email("Enter a valid email"),
-  role: z.enum(["ADMIN", "FRANCHISE_MANAGER", "SUPERVISOR", "TECHNICIAN", "STORE_USER"]),
-  franchiseId: z.string().optional(),
-  locationId: z.string().optional(),
-})
+const schema = z
+  .object({
+    email: z.string().email("Enter a valid email"),
+    role: z.enum(["ADMIN", "FRANCHISE_MANAGER", "SUPERVISOR", "TECHNICIAN", "STORE_USER"]),
+    department: z.enum(["IT", "MAINTENANCE"]).optional(),
+    franchiseId: z.string().optional(),
+    locationId: z.string().optional(),
+  })
+  .refine((d) => d.role !== "TECHNICIAN" || d.department !== undefined, {
+    message: "Department is required for Technicians",
+    path: ["department"],
+  })
 type FormData = z.infer<typeof schema>
 
 interface Franchise {
@@ -150,6 +156,24 @@ export function InviteUserDialog({ actorRole, onSuccess }: InviteUserDialogProps
             </Select>
             {errors.role && <p className="text-xs text-destructive">{errors.role.message}</p>}
           </div>
+
+          {selectedRole === "TECHNICIAN" && (
+            <div className="space-y-2">
+              <Label>Department</Label>
+              <Select onValueChange={(v) => setValue("department", v as "IT" | "MAINTENANCE")}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select department" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="IT">IT</SelectItem>
+                  <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.department && (
+                <p className="text-xs text-destructive">{errors.department.message}</p>
+              )}
+            </div>
+          )}
 
           {selectedRole && selectedRole !== "ADMIN" && (
             <div className="space-y-2">

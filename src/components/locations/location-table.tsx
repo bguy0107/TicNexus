@@ -173,7 +173,12 @@ export function LocationTable() {
                 </Button>
                 <Button
                   onClick={handleCreate}
-                  disabled={creating || !form.name.trim() || !form.locationNumber.trim() || !form.franchiseId}
+                  disabled={
+                    creating ||
+                    !form.name.trim() ||
+                    !form.locationNumber.trim() ||
+                    !form.franchiseId
+                  }
                 >
                   {creating ? "Creating..." : "Create"}
                 </Button>
@@ -190,7 +195,6 @@ export function LocationTable() {
               <TableHead>Location ID</TableHead>
               <TableHead>Name</TableHead>
               <TableHead>Franchise</TableHead>
-              <TableHead>Address</TableHead>
               <TableHead>Users</TableHead>
               <TableHead>Created</TableHead>
               {isAdmin && <TableHead className="w-12" />}
@@ -200,7 +204,7 @@ export function LocationTable() {
             {locations.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={isAdmin ? 7 : 6}
+                  colSpan={isAdmin ? 6 : 5}
                   className="text-center text-muted-foreground py-8"
                 >
                   No locations found
@@ -214,7 +218,6 @@ export function LocationTable() {
                   </TableCell>
                   <TableCell className="font-medium">{l.name}</TableCell>
                   <TableCell className="text-muted-foreground">{l.franchise.name}</TableCell>
-                  <TableCell className="text-muted-foreground">{l.address ?? "—"}</TableCell>
                   <TableCell>{l._count.userLocations}</TableCell>
                   <TableCell className="text-muted-foreground text-sm">
                     {formatDate(l.createdAt)}
@@ -252,9 +255,10 @@ export function LocationTable() {
         </Table>
       </div>
 
-      {editingLocation && (
+      {editingLocation && actorRole && (
         <EditLocationDialog
           location={editingLocation}
+          actorRole={actorRole}
           open={!!editingLocation}
           onOpenChange={(open) => {
             if (!open) setEditingLocation(null)

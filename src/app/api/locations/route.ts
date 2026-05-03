@@ -101,7 +101,11 @@ export async function POST(request: NextRequest) {
     action: "CREATE",
     entityType: "location",
     entityId: location.id,
-    changes: { name: location.name, locationNumber: location.locationNumber, franchiseId: location.franchiseId },
+    changes: {
+      name: location.name,
+      locationNumber: location.locationNumber,
+      franchiseId: location.franchiseId,
+    },
     ipAddress: getIpFromRequest(request),
   })
 

@@ -153,9 +153,13 @@ export function PendingInvitesTable() {
                       </TableCell>
                       <TableCell>
                         {isExpired ? (
-                          <Badge variant="destructive">Expired</Badge>
+                          <Badge variant="destructive" className="w-fit">
+                            Expired
+                          </Badge>
                         ) : (
-                          <Badge variant="secondary">Pending</Badge>
+                          <Badge variant="secondary" className="w-fit">
+                            Pending
+                          </Badge>
                         )}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">

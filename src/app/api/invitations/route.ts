@@ -13,12 +13,18 @@ import { getIpFromRequest } from "@/lib/utils"
 import { z } from "zod"
 import type { Role } from "@prisma/client"
 
-const schema = z.object({
-  email: z.string().email(),
-  role: z.enum(["ADMIN", "FRANCHISE_MANAGER", "SUPERVISOR", "TECHNICIAN", "STORE_USER"]),
-  franchiseId: z.string().optional(),
-  locationId: z.string().optional(),
-})
+const schema = z
+  .object({
+    email: z.string().email(),
+    role: z.enum(["ADMIN", "FRANCHISE_MANAGER", "SUPERVISOR", "TECHNICIAN", "STORE_USER"]),
+    department: z.enum(["IT", "MAINTENANCE"]).optional(),
+    franchiseId: z.string().optional(),
+    locationId: z.string().optional(),
+  })
+  .refine((d) => d.role !== "TECHNICIAN" || d.department !== undefined, {
+    message: "Department is required for Technician invitations",
+    path: ["department"],
+  })
 
 export async function POST(request: NextRequest) {
   const session = await getApiSession(request.headers)
@@ -33,7 +39,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
   }
 
-  const { email, role, franchiseId, locationId } = parsed.data
+  const { email, role, department, franchiseId, locationId } = parsed.data
 
   if (!canCreateRole(actorRole, role as Role)) {
     return NextResponse.json({ error: "You cannot invite users with that role" }, { status: 403 })
@@ -84,6 +90,7 @@ export async function POST(request: NextRequest) {
     data: {
       email,
       role: role as Role,
+      department: department ?? null,
       franchiseId: franchiseId ?? null,
       locationId: locationId ?? null,
       invitedById: actorId,

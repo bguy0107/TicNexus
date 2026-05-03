@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getApiSession } from "@/lib/session"
 import { db } from "@/lib/db"
 import { createAuditLog } from "@/lib/audit"
-import { hasPermission } from "@/lib/permissions"
+import { hasPermission, isHigherRole } from "@/lib/permissions"
 import { getIpFromRequest } from "@/lib/utils"
 import { z } from "zod"
 import type { Role } from "@prisma/client"
@@ -80,6 +80,22 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       { error: "Forbidden: only admins can perform this operation" },
       { status: 403 }
     )
+  }
+
+  if (addUserIds?.length) {
+    const targetUsers = await db.user.findMany({
+      where: { id: { in: addUserIds }, deletedAt: null },
+      select: { id: true, role: true },
+    })
+    const outOfRank = targetUsers.filter(
+      (u) => !isHigherRole(session.user.role as Role, u.role as Role)
+    )
+    if (outOfRank.length > 0) {
+      return NextResponse.json(
+        { error: "Forbidden: cannot assign users of equal or higher rank" },
+        { status: 403 }
+      )
+    }
   }
 
   const before: Record<string, unknown> = {}

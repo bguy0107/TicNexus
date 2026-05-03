@@ -33,6 +33,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { isHigherRole } from "@/lib/permissions"
 import type { UserWithRelations, Role } from "@/types"
 
 export function UserTable() {
@@ -108,7 +109,6 @@ export function UserTable() {
               <TableHead>Name</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Role</TableHead>
-              <TableHead>Franchise / Location</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Joined</TableHead>
               <TableHead className="w-12" />
@@ -117,7 +117,7 @@ export function UserTable() {
           <TableBody>
             {users.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                   No users found
                 </TableCell>
               </TableRow>
@@ -133,22 +133,24 @@ export function UserTable() {
                     </TableCell>
                     <TableCell className="text-muted-foreground">{user.email}</TableCell>
                     <TableCell>
-                      <UserRoleBadge role={user.role} />
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {user.userFranchises.length > 0
-                        ? user.userFranchises.map((uf) => uf.franchise.name).join(", ")
-                        : user.userLocations.length > 0
-                          ? user.userLocations
-                              .map((ul) => `${ul.location.name} (${ul.location.franchise.name})`)
-                              .join(", ")
-                          : "—"}
+                      <div className="flex flex-col items-start gap-1">
+                        <UserRoleBadge role={user.role} />
+                        {user.role === "TECHNICIAN" && user.department && (
+                          <span className="text-xs text-muted-foreground">
+                            {user.department === "IT" ? "IT" : "Maintenance"}
+                          </span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       {user.deletedAt ? (
-                        <Badge variant="destructive">Inactive</Badge>
+                        <Badge variant="destructive" className="w-fit">
+                          Inactive
+                        </Badge>
                       ) : (
-                        <Badge variant="secondary">Active</Badge>
+                        <Badge variant="secondary" className="w-fit">
+                          Active
+                        </Badge>
                       )}
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
@@ -163,7 +165,7 @@ export function UserTable() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            {isAdmin && (
+                            {isHigherRole(actorRole, user.role) && (
                               <>
                                 <DropdownMenuItem
                                   className="cursor-pointer"

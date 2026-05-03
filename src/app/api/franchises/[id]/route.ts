@@ -34,7 +34,13 @@ const patchSchema = z.object({
   addManagerIds: z.array(z.string()).optional(),
   removeManagerIds: z.array(z.string()).optional(),
   addLocations: z
-    .array(z.object({ name: z.string().min(1), locationNumber: z.string().min(1), address: z.string().optional() }))
+    .array(
+      z.object({
+        name: z.string().min(1),
+        locationNumber: z.string().min(1),
+        address: z.string().optional(),
+      })
+    )
     .optional(),
   removeLocationIds: z.array(z.string()).optional(),
 })
