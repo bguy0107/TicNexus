@@ -34,6 +34,8 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # The standalone Next.js app self-bundles what it needs; this is only for entrypoint migrations.
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/src ./src
+COPY --from=builder /app/tsconfig.json ./tsconfig.json
 
 COPY entrypoint.sh ./entrypoint.sh
 RUN chmod +x entrypoint.sh
