@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 
 const SESSION_COOKIE = "better-auth.session_token"
 
-const PUBLIC_ROUTES = new Set(["/login", "/setup", "/reset-password"])
-const PUBLIC_PREFIXES = ["/invite/", "/api/auth", "/api/invitations/", "/api/setup"]
+const PUBLIC_ROUTES = new Set(["/login", "/reset-password"])
+const PUBLIC_PREFIXES = ["/invite/", "/api/auth", "/api/invitations/"]
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl

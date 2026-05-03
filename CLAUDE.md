@@ -33,7 +33,7 @@ npm run db:seed              # Seed the DB with test users, franchises, and loca
 
 **Local environment:** Copy `.env.example` to `.env` and fill in all values. Run `docker compose up -d` to start PostgreSQL (the `db` service only). The app can then be run locally with `npm run dev` pointing at the Dockerized database. The `DATABASE_URL` in `.env` must use `localhost` as the host when running the app outside Docker.
 
-**First-run setup:** Visit `/setup` before any admin user exists to create the initial administrator account. This route becomes inaccessible once an admin exists.
+**First-run setup:** The admin account (`admin@ticnexus.com` / `Admin1234!`) is created automatically by `prisma/init-admin.ts` on every container startup. No manual setup step is required.
 
 ---
 

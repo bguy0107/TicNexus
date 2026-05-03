@@ -57,7 +57,8 @@ This will:
 1. Build the Next.js application image
 2. Start a PostgreSQL 16 database
 3. Run all Prisma migrations automatically on startup
-4. Start the app on port `3000`
+4. Create the default admin account if it does not already exist
+5. Start the app on port `3000`
 
 Check that both containers are healthy:
 
@@ -65,7 +66,18 @@ Check that both containers are healthy:
 docker compose ps
 ```
 
-### 4. Set up a reverse proxy (HTTPS)
+### 4. First login
+
+The default admin account is provisioned automatically on startup:
+
+| Field    | Value                |
+| -------- | -------------------- |
+| Email    | `admin@ticnexus.com` |
+| Password | `Admin1234!`         |
+
+**Change this password immediately after first login.**
+
+### 5. Set up a reverse proxy (HTTPS)
 
 The app listens on `http://localhost:3000`. You must front it with a reverse proxy that terminates TLS before exposing it to the internet.
 
@@ -96,10 +108,6 @@ server {
     }
 }
 ```
-
-### 5. Complete first-run setup
-
-Visit `https://app.example.com/setup` in your browser to create the initial administrator account. This page is only accessible before any admin user exists.
 
 ---
 
