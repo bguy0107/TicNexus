@@ -7,6 +7,9 @@ import {
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog"
 import { UserRoleBadge } from "./user-role-badge"
 import { InviteUserDialog } from "./invite-user-dialog"
 import { EditUserDialog } from "./edit-user-dialog"
@@ -23,6 +26,8 @@ export function UserTable() {
   const [users, setUsers] = useState<UserWithRelations[]>([])
   const [loading, setLoading] = useState(true)
   const [editingUser, setEditingUser] = useState<UserWithRelations | null>(null)
+  const [confirmDeactivate, setConfirmDeactivate] = useState<{ id: string; name: string } | null>(null)
+  const [deactivating, setDeactivating] = useState(false)
   const { toast } = useToast()
 
   const fetchUsers = useCallback(async () => {
@@ -35,11 +40,14 @@ export function UserTable() {
 
   useEffect(() => { fetchUsers() }, [fetchUsers])
 
-  const handleDeactivate = async (userId: string, userName: string) => {
-    if (!confirm(`Deactivate ${userName}? They will lose access immediately.`)) return
-    const res = await fetch(`/api/users/${userId}`, { method: "DELETE" })
+  const handleDeactivateConfirmed = async () => {
+    if (!confirmDeactivate) return
+    setDeactivating(true)
+    const res = await fetch(`/api/users/${confirmDeactivate.id}`, { method: "DELETE" })
+    setDeactivating(false)
+    setConfirmDeactivate(null)
     if (res.ok) {
-      toast({ title: "User deactivated", description: `${userName} has been deactivated.` })
+      toast({ title: "User deactivated", description: `${confirmDeactivate.name} has been deactivated.` })
       fetchUsers()
     } else {
       const data = await res.json()
@@ -147,7 +155,7 @@ export function UserTable() {
                               <DropdownMenuItem
                                 className="text-destructive cursor-pointer"
                                 onClick={() =>
-                                  handleDeactivate(user.id, `${user.firstName} ${user.lastName}`)
+                                  setConfirmDeactivate({ id: user.id, name: `${user.firstName} ${user.lastName}` })
                                 }
                               >
                                 Deactivate
@@ -184,6 +192,27 @@ export function UserTable() {
           onSuccess={fetchUsers}
         />
       )}
+
+      <Dialog open={!!confirmDeactivate} onOpenChange={(open) => { if (!open) setConfirmDeactivate(null) }}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Deactivate user</DialogTitle>
+            <DialogDescription>
+              Deactivate{" "}
+              <span className="font-medium text-foreground">{confirmDeactivate?.name}</span>?
+              They will lose access immediately.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmDeactivate(null)} disabled={deactivating}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDeactivateConfirmed} disabled={deactivating}>
+              {deactivating ? "Deactivating…" : "Deactivate"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

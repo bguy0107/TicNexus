@@ -102,10 +102,43 @@ export async function GET(request: NextRequest) {
   const session = await getApiSession(request.headers)
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
+  const actorRole = session.user.role as Role
+  const actorId = session.user.id
+
+  // Base filter: not yet accepted (include expired so admins can resend)
+  const baseWhere = { acceptedAt: null }
+
+  let where = baseWhere
+
+  if (actorRole === "FRANCHISE_MANAGER") {
+    const [franchiseIds, locationIds] = await Promise.all([
+      getFranchiseMgrFranchiseIds(actorId),
+      getFranchiseMgrLocationIds(actorId),
+    ])
+    where = {
+      ...baseWhere,
+      OR: [
+        { invitedById: actorId },
+        { franchiseId: { in: franchiseIds } },
+        { locationId: { in: locationIds } },
+      ],
+    } as typeof baseWhere
+  } else if (actorRole === "SUPERVISOR") {
+    const locationIds = await getSupervisorLocationIds(actorId)
+    where = {
+      ...baseWhere,
+      OR: [
+        { invitedById: actorId },
+        { locationId: { in: locationIds } },
+      ],
+    } as typeof baseWhere
+  }
+
   const invitations = await db.invitation.findMany({
-    where: { acceptedAt: null, expiresAt: { gt: new Date() } },
+    where,
     select: {
       id: true,
+      token: true,
       email: true,
       role: true,
       expiresAt: true,

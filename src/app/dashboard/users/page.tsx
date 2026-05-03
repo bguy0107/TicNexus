@@ -1,5 +1,5 @@
 import { requireRole } from "@/lib/session"
-import { UserTable } from "@/components/users/user-table"
+import { UserManagement } from "@/components/users/user-management"
 
 export default async function UsersPage() {
   await requireRole(["ADMIN", "FRANCHISE_MANAGER", "SUPERVISOR"])
@@ -9,7 +9,7 @@ export default async function UsersPage() {
         <h1 className="text-2xl font-bold text-foreground">Users</h1>
         <p className="text-muted-foreground">Manage user accounts and invitations</p>
       </div>
-      <UserTable />
+      <UserManagement />
     </div>
   )
 }

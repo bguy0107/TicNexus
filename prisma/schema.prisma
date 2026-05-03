@@ -113,10 +113,11 @@ model Franchise {
 }
 
 model Location {
-  id          String    @id @default(cuid())
-  name        String
-  address     String?
-  franchiseId String
+  id             String    @id @default(cuid())
+  name           String
+  locationNumber String?
+  address        String?
+  franchiseId    String
   franchise   Franchise @relation(fields: [franchiseId], references: [id])
   createdById String?
   createdAt   DateTime  @default(now())

@@ -1,9 +1,35 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { auth } from "@/lib/auth"
+import { getApiSession } from "@/lib/session"
 import { createAuditLog } from "@/lib/audit"
+import { getFranchiseMgrFranchiseIds, getFranchiseMgrLocationIds, getSupervisorLocationIds } from "@/lib/scope"
 import { getIpFromRequest } from "@/lib/utils"
 import { z } from "zod"
+import type { Role } from "@prisma/client"
+
+async function isInvitationInScope(
+  actorRole: Role,
+  actorId: string,
+  invitation: { invitedById: string; franchiseId: string | null; locationId: string | null }
+): Promise<boolean> {
+  if (invitation.invitedById === actorId) return true
+  if (actorRole === "FRANCHISE_MANAGER") {
+    const [franchiseIds, locationIds] = await Promise.all([
+      getFranchiseMgrFranchiseIds(actorId),
+      getFranchiseMgrLocationIds(actorId),
+    ])
+    return (
+      (invitation.franchiseId !== null && franchiseIds.includes(invitation.franchiseId)) ||
+      (invitation.locationId !== null && locationIds.includes(invitation.locationId))
+    )
+  }
+  if (actorRole === "SUPERVISOR") {
+    const locationIds = await getSupervisorLocationIds(actorId)
+    return invitation.locationId !== null && locationIds.includes(invitation.locationId)
+  }
+  return false
+}
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
@@ -96,6 +122,37 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   await createAuditLog({
     actorId: userId,
     action: "INVITE_ACCEPTED",
+    entityType: "invitation",
+    entityId: invitation.id,
+    changes: { email: invitation.email, role: invitation.role },
+    ipAddress: getIpFromRequest(request),
+  })
+
+  return NextResponse.json({ success: true })
+}
+
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ token: string }> }) {
+  const session = await getApiSession(request.headers)
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+
+  const { token } = await params
+  const actorRole = session.user.role as Role
+  const actorId = session.user.id
+
+  const invitation = await db.invitation.findUnique({ where: { token } })
+  if (!invitation) return NextResponse.json({ error: "Not found" }, { status: 404 })
+  if (invitation.acceptedAt) return NextResponse.json({ error: "Invitation already accepted" }, { status: 400 })
+
+  if (actorRole !== "ADMIN") {
+    const allowed = await isInvitationInScope(actorRole, actorId, invitation)
+    if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  }
+
+  await db.invitation.delete({ where: { token } })
+
+  await createAuditLog({
+    actorId,
+    action: "DELETE",
     entityType: "invitation",
     entityId: invitation.id,
     changes: { email: invitation.email, role: invitation.role },
