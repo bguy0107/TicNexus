@@ -33,7 +33,7 @@ export interface FranchiseWithDetails {
 export interface LocationWithDetails {
   id: string
   name: string
-  locationNumber: string | null
+  locationNumber: string
   address: string | null
   franchiseId: string
   franchise: { name: string }

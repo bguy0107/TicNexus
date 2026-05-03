@@ -18,7 +18,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       franchise: { select: { id: true, name: true } },
       userLocations: {
         include: {
-          user: { select: { id: true, firstName: true, lastName: true, email: true, role: true, deletedAt: true } },
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              role: true,
+              deletedAt: true,
+            },
+          },
         },
       },
       _count: { select: { userLocations: true } },
@@ -60,8 +69,17 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const isAdmin = session.user.role === "ADMIN"
 
   // Admin-only fields
-  if ((locationNumber !== undefined || franchiseId !== undefined || addUserIds?.length || removeUserIds?.length) && !isAdmin) {
-    return NextResponse.json({ error: "Forbidden: only admins can perform this operation" }, { status: 403 })
+  if (
+    (locationNumber !== undefined ||
+      franchiseId !== undefined ||
+      addUserIds?.length ||
+      removeUserIds?.length) &&
+    !isAdmin
+  ) {
+    return NextResponse.json(
+      { error: "Forbidden: only admins can perform this operation" },
+      { status: 403 }
+    )
   }
 
   const before: Record<string, unknown> = {}
@@ -69,10 +87,26 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
   await db.$transaction(async (tx) => {
     const locationUpdates: Record<string, unknown> = {}
-    if (name && name !== existing.name) { before.name = existing.name; after.name = name; locationUpdates.name = name }
-    if (address !== undefined && address !== existing.address) { before.address = existing.address; after.address = address; locationUpdates.address = address }
-    if (locationNumber !== undefined && locationNumber !== existing.locationNumber) { before.locationNumber = existing.locationNumber; after.locationNumber = locationNumber; locationUpdates.locationNumber = locationNumber }
-    if (franchiseId && franchiseId !== existing.franchiseId) { before.franchiseId = existing.franchiseId; after.franchiseId = franchiseId; locationUpdates.franchiseId = franchiseId }
+    if (name && name !== existing.name) {
+      before.name = existing.name
+      after.name = name
+      locationUpdates.name = name
+    }
+    if (address !== undefined && address !== existing.address) {
+      before.address = existing.address
+      after.address = address
+      locationUpdates.address = address
+    }
+    if (locationNumber !== undefined && locationNumber !== existing.locationNumber) {
+      before.locationNumber = existing.locationNumber
+      after.locationNumber = locationNumber
+      locationUpdates.locationNumber = locationNumber
+    }
+    if (franchiseId && franchiseId !== existing.franchiseId) {
+      before.franchiseId = existing.franchiseId
+      after.franchiseId = franchiseId
+      locationUpdates.franchiseId = franchiseId
+    }
 
     if (Object.keys(locationUpdates).length > 0) {
       await tx.location.update({ where: { id }, data: locationUpdates })
@@ -80,7 +114,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     if (addUserIds?.length) {
       await tx.userLocation.createMany({
-        data: addUserIds.map((userId) => ({ userId, locationId: id, assignedById: session.user.id })),
+        data: addUserIds.map((userId) => ({
+          userId,
+          locationId: id,
+          assignedById: session.user.id,
+        })),
         skipDuplicates: true,
       })
       after.addedUserIds = addUserIds
@@ -106,7 +144,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   return NextResponse.json({ success: true })
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   const session = await getApiSession(request.headers)
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 

@@ -4,7 +4,11 @@ import { db } from "@/lib/db"
 import { sendInvitationEmail } from "@/lib/email"
 import { createAuditLog } from "@/lib/audit"
 import { canCreateRole } from "@/lib/permissions"
-import { getFranchiseMgrFranchiseIds, getFranchiseMgrLocationIds, getSupervisorLocationIds } from "@/lib/scope"
+import {
+  getFranchiseMgrFranchiseIds,
+  getFranchiseMgrLocationIds,
+  getSupervisorLocationIds,
+} from "@/lib/scope"
 import { getIpFromRequest } from "@/lib/utils"
 import { z } from "zod"
 import type { Role } from "@prisma/client"
@@ -44,7 +48,10 @@ export async function POST(request: NextRequest) {
     if (locationId) {
       const fmLocationIds = await getFranchiseMgrLocationIds(actorId)
       if (!fmLocationIds.includes(locationId)) {
-        return NextResponse.json({ error: "Forbidden: location not in your franchise" }, { status: 403 })
+        return NextResponse.json(
+          { error: "Forbidden: location not in your franchise" },
+          { status: 403 }
+        )
       }
     }
   }
@@ -66,7 +73,10 @@ export async function POST(request: NextRequest) {
     where: { email, acceptedAt: null, expiresAt: { gt: new Date() } },
   })
   if (pendingInvite) {
-    return NextResponse.json({ error: "An active invitation already exists for this email" }, { status: 409 })
+    return NextResponse.json(
+      { error: "An active invitation already exists for this email" },
+      { status: 409 }
+    )
   }
 
   const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000)
@@ -127,10 +137,7 @@ export async function GET(request: NextRequest) {
     const locationIds = await getSupervisorLocationIds(actorId)
     where = {
       ...baseWhere,
-      OR: [
-        { invitedById: actorId },
-        { locationId: { in: locationIds } },
-      ],
+      OR: [{ invitedById: actorId }, { locationId: { in: locationIds } }],
     } as typeof baseWhere
   }
 

@@ -2,13 +2,21 @@
 
 import { useState, useEffect } from "react"
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/components/ui/use-toast"
@@ -23,8 +31,16 @@ const ALL_ROLES: { value: Role; label: string }[] = [
   { value: "STORE_USER", label: "Store User" },
 ]
 
-interface Franchise { id: string; name: string }
-interface Location { id: string; name: string; franchiseId: string; franchise: { name: string } }
+interface Franchise {
+  id: string
+  name: string
+}
+interface Location {
+  id: string
+  name: string
+  franchiseId: string
+  franchise: { name: string }
+}
 
 interface EditUserDialogProps {
   user: UserWithRelations
@@ -51,8 +67,12 @@ export function EditUserDialog({ user, open, onOpenChange, onSuccess }: EditUser
     setRole(user.role)
     setCurrentFranchiseIds(user.userFranchises.map((uf) => uf.franchise.id))
     setCurrentLocationIds(user.userLocations.map((ul) => ul.location.id))
-    fetch("/api/franchises").then((r) => r.json()).then((d) => setAllFranchises(d.franchises ?? []))
-    fetch("/api/locations").then((r) => r.json()).then((d) => setAllLocations(d.locations ?? []))
+    fetch("/api/franchises")
+      .then((r) => r.json())
+      .then((d) => setAllFranchises(d.franchises ?? []))
+    fetch("/api/locations")
+      .then((r) => r.json())
+      .then((d) => setAllLocations(d.locations ?? []))
   }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const originalFranchiseIds = user.userFranchises.map((uf) => uf.franchise.id)
@@ -62,7 +82,9 @@ export function EditUserDialog({ user, open, onOpenChange, onSuccess }: EditUser
     setSaving(true)
 
     const addFranchiseIds = currentFranchiseIds.filter((id) => !originalFranchiseIds.includes(id))
-    const removeFranchiseIds = originalFranchiseIds.filter((id) => !currentFranchiseIds.includes(id))
+    const removeFranchiseIds = originalFranchiseIds.filter(
+      (id) => !currentFranchiseIds.includes(id)
+    )
     const addLocationIds = currentLocationIds.filter((id) => !originalLocationIds.includes(id))
     const removeLocationIds = originalLocationIds.filter((id) => !currentLocationIds.includes(id))
 
@@ -132,7 +154,9 @@ export function EditUserDialog({ user, open, onOpenChange, onSuccess }: EditUser
               </SelectTrigger>
               <SelectContent>
                 {ALL_ROLES.map((r) => (
-                  <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                  <SelectItem key={r.value} value={r.value}>
+                    {r.label}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -149,7 +173,9 @@ export function EditUserDialog({ user, open, onOpenChange, onSuccess }: EditUser
                     {f.name}
                     <button
                       type="button"
-                      onClick={() => setCurrentFranchiseIds((prev) => prev.filter((id) => id !== f.id))}
+                      onClick={() =>
+                        setCurrentFranchiseIds((prev) => prev.filter((id) => id !== f.id))
+                      }
                       className="ml-1 rounded-sm hover:text-destructive"
                     >
                       <X className="h-3 w-3" />
@@ -168,7 +194,9 @@ export function EditUserDialog({ user, open, onOpenChange, onSuccess }: EditUser
                 </SelectTrigger>
                 <SelectContent>
                   {unassignedFranchises.map((f) => (
-                    <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                    <SelectItem key={f.id} value={f.id}>
+                      {f.name}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -187,7 +215,9 @@ export function EditUserDialog({ user, open, onOpenChange, onSuccess }: EditUser
                     <span className="text-muted-foreground text-xs">({l.franchise.name})</span>
                     <button
                       type="button"
-                      onClick={() => setCurrentLocationIds((prev) => prev.filter((id) => id !== l.id))}
+                      onClick={() =>
+                        setCurrentLocationIds((prev) => prev.filter((id) => id !== l.id))
+                      }
                       className="ml-1 rounded-sm hover:text-destructive"
                     >
                       <X className="h-3 w-3" />
@@ -217,7 +247,9 @@ export function EditUserDialog({ user, open, onOpenChange, onSuccess }: EditUser
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
           <Button onClick={handleSave} disabled={saving}>
             {saving ? "Saving…" : "Save changes"}
           </Button>

@@ -17,7 +17,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const actorId = session.user.id
 
   // TECHNICIAN and STORE_USER cannot reset others' passwords; they use change-password for their own
-  if (!hasPermission(actorRole, "user:reset-password:any") && !hasPermission(actorRole, "user:reset-password:below")) {
+  if (
+    !hasPermission(actorRole, "user:reset-password:any") &&
+    !hasPermission(actorRole, "user:reset-password:below")
+  ) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 

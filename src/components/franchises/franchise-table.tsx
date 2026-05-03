@@ -3,19 +3,34 @@
 import { useEffect, useState, useCallback } from "react"
 import { useSession } from "@/lib/auth-client"
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogTrigger,
+  DialogFooter,
 } from "@/components/ui/dialog"
 import { useToast } from "@/components/ui/use-toast"
 import { formatDate } from "@/lib/utils"
 import { Plus, MoreHorizontal } from "lucide-react"
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { EditFranchiseDialog } from "./edit-franchise-dialog"
 import type { FranchiseWithDetails, Role } from "@/types"
@@ -28,7 +43,11 @@ export function FranchiseTable() {
   const [newName, setNewName] = useState("")
   const [creating, setCreating] = useState(false)
   const [editingFranchise, setEditingFranchise] = useState<FranchiseWithDetails | null>(null)
-  const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string; locationCount: number } | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState<{
+    id: string
+    name: string
+    locationCount: number
+  } | null>(null)
   const [deleteStep, setDeleteStep] = useState<1 | 2>(1)
   const [deleting, setDeleting] = useState(false)
   const { toast } = useToast()
@@ -41,7 +60,9 @@ export function FranchiseTable() {
     setLoading(false)
   }, [])
 
-  useEffect(() => { fetchFranchises() }, [fetchFranchises])
+  useEffect(() => {
+    fetchFranchises()
+  }, [fetchFranchises])
 
   const actorRole = (session?.user as { role?: Role })?.role
 
@@ -90,10 +111,15 @@ export function FranchiseTable() {
         {actorRole === "ADMIN" && (
           <Dialog open={createOpen} onOpenChange={setCreateOpen}>
             <DialogTrigger asChild>
-              <Button className="gap-2"><Plus className="h-4 w-4" />Add Franchise</Button>
+              <Button className="gap-2">
+                <Plus className="h-4 w-4" />
+                Add Franchise
+              </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-sm">
-              <DialogHeader><DialogTitle>New franchise</DialogTitle></DialogHeader>
+              <DialogHeader>
+                <DialogTitle>New franchise</DialogTitle>
+              </DialogHeader>
               <div className="space-y-2">
                 <Label>Franchise name</Label>
                 <Input
@@ -104,7 +130,9 @@ export function FranchiseTable() {
                 />
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
+                <Button variant="outline" onClick={() => setCreateOpen(false)}>
+                  Cancel
+                </Button>
                 <Button onClick={handleCreate} disabled={creating || !newName.trim()}>
                   {creating ? "Creating..." : "Create"}
                 </Button>
@@ -136,12 +164,16 @@ export function FranchiseTable() {
                 <TableRow key={f.id}>
                   <TableCell className="font-medium">{f.name}</TableCell>
                   <TableCell>{f._count.locations}</TableCell>
-                  <TableCell className="text-muted-foreground text-sm">{formatDate(f.createdAt)}</TableCell>
+                  <TableCell className="text-muted-foreground text-sm">
+                    {formatDate(f.createdAt)}
+                  </TableCell>
                   {actorRole === "ADMIN" && (
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="icon">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem
@@ -153,7 +185,14 @@ export function FranchiseTable() {
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             className="text-destructive cursor-pointer"
-                            onClick={() => { setConfirmDelete({ id: f.id, name: f.name, locationCount: f._count.locations }); setDeleteStep(1) }}
+                            onClick={() => {
+                              setConfirmDelete({
+                                id: f.id,
+                                name: f.name,
+                                locationCount: f._count.locations,
+                              })
+                              setDeleteStep(1)
+                            }}
                           >
                             Delete
                           </DropdownMenuItem>
@@ -171,14 +210,21 @@ export function FranchiseTable() {
         <EditFranchiseDialog
           franchise={editingFranchise}
           open={!!editingFranchise}
-          onOpenChange={(open) => { if (!open) setEditingFranchise(null) }}
+          onOpenChange={(open) => {
+            if (!open) setEditingFranchise(null)
+          }}
           onSuccess={fetchFranchises}
         />
       )}
 
       <Dialog
         open={!!confirmDelete}
-        onOpenChange={(open) => { if (!open) { setConfirmDelete(null); setDeleteStep(1) } }}
+        onOpenChange={(open) => {
+          if (!open) {
+            setConfirmDelete(null)
+            setDeleteStep(1)
+          }
+        }}
       >
         <DialogContent className="sm:max-w-sm">
           {deleteStep === 1 ? (
@@ -191,7 +237,13 @@ export function FranchiseTable() {
                 </DialogDescription>
               </DialogHeader>
               <DialogFooter>
-                <Button variant="outline" onClick={() => { setConfirmDelete(null); setDeleteStep(1) }}>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setConfirmDelete(null)
+                    setDeleteStep(1)
+                  }}
+                >
                   Cancel
                 </Button>
                 <Button variant="destructive" onClick={() => setDeleteStep(2)}>
@@ -205,10 +257,11 @@ export function FranchiseTable() {
                 <DialogTitle>Delete franchise</DialogTitle>
                 <DialogDescription>
                   Deleting{" "}
-                  <span className="font-medium text-foreground">{confirmDelete?.name}</span>{" "}
-                  will also delete{" "}
+                  <span className="font-medium text-foreground">{confirmDelete?.name}</span> will
+                  also delete{" "}
                   <span className="font-medium text-foreground">
-                    {confirmDelete?.locationCount ?? 0} location{confirmDelete?.locationCount !== 1 ? "s" : ""}
+                    {confirmDelete?.locationCount ?? 0} location
+                    {confirmDelete?.locationCount !== 1 ? "s" : ""}
                   </span>{" "}
                   associated with it. Are you sure you want to proceed?
                 </DialogDescription>

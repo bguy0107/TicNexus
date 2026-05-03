@@ -115,7 +115,7 @@ model Franchise {
 model Location {
   id             String    @id @default(cuid())
   name           String
-  locationNumber String?
+  locationNumber String
   address        String?
   franchiseId    String
   franchise   Franchise @relation(fields: [franchiseId], references: [id])

@@ -5,13 +5,22 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select"
 import { useToast } from "@/components/ui/use-toast"
 import { UserPlus } from "lucide-react"
@@ -33,8 +42,16 @@ const schema = z.object({
 })
 type FormData = z.infer<typeof schema>
 
-interface Franchise { id: string; name: string }
-interface Location { id: string; name: string; franchiseId: string; franchise: { name: string } }
+interface Franchise {
+  id: string
+  name: string
+}
+interface Location {
+  id: string
+  name: string
+  franchiseId: string
+  franchise: { name: string }
+}
 
 interface InviteUserDialogProps {
   actorRole: Role
@@ -61,8 +78,12 @@ export function InviteUserDialog({ actorRole, onSuccess }: InviteUserDialogProps
 
   useEffect(() => {
     if (!open) return
-    fetch("/api/franchises").then((r) => r.json()).then((d) => setFranchises(d.franchises ?? []))
-    fetch("/api/locations").then((r) => r.json()).then((d) => setLocations(d.locations ?? []))
+    fetch("/api/franchises")
+      .then((r) => r.json())
+      .then((d) => setFranchises(d.franchises ?? []))
+    fetch("/api/locations")
+      .then((r) => r.json())
+      .then((d) => setLocations(d.locations ?? []))
   }, [open])
 
   const filteredLocations = selectedFranchiseId
@@ -71,7 +92,8 @@ export function InviteUserDialog({ actorRole, onSuccess }: InviteUserDialogProps
 
   const availableRoles = INVITABLE_ROLES.filter((r) => {
     if (actorRole === "ADMIN") return true
-    if (actorRole === "FRANCHISE_MANAGER") return ["SUPERVISOR", "TECHNICIAN", "STORE_USER"].includes(r.value)
+    if (actorRole === "FRANCHISE_MANAGER")
+      return ["SUPERVISOR", "TECHNICIAN", "STORE_USER"].includes(r.value)
     if (actorRole === "SUPERVISOR") return r.value === "STORE_USER"
     return false
   })
@@ -132,13 +154,20 @@ export function InviteUserDialog({ actorRole, onSuccess }: InviteUserDialogProps
           {selectedRole && selectedRole !== "ADMIN" && (
             <div className="space-y-2">
               <Label>Franchise</Label>
-              <Select onValueChange={(v) => { setValue("franchiseId", v); setValue("locationId", undefined) }}>
+              <Select
+                onValueChange={(v) => {
+                  setValue("franchiseId", v)
+                  setValue("locationId", undefined)
+                }}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select franchise" />
                 </SelectTrigger>
                 <SelectContent>
                   {franchises.map((f) => (
-                    <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                    <SelectItem key={f.id} value={f.id}>
+                      {f.name}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>

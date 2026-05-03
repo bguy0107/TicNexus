@@ -23,7 +23,9 @@ const userSelect = {
   deletedAt: true,
   userFranchises: { select: { franchise: { select: { id: true, name: true } } } },
   userLocations: {
-    select: { location: { select: { id: true, name: true, franchise: { select: { name: true } } } } },
+    select: {
+      location: { select: { id: true, name: true, franchise: { select: { name: true } } } },
+    },
   },
 } as const
 
@@ -83,7 +85,15 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   }
 
   const body = await request.json()
-  const { firstName, lastName, role, addLocationIds, removeLocationIds, addFranchiseIds, removeFranchiseIds } = body
+  const {
+    firstName,
+    lastName,
+    role,
+    addLocationIds,
+    removeLocationIds,
+    addFranchiseIds,
+    removeFranchiseIds,
+  } = body
 
   // Role change: requires user:update:role and the new role must be one actor can create
   if (role !== undefined && role !== target.role) {
@@ -97,7 +107,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
   // Assignment changes: requires user:update:assignments, and locations must be within actor's scope
   const hasAssignmentChanges =
-    addLocationIds?.length || removeLocationIds?.length || addFranchiseIds?.length || removeFranchiseIds?.length
+    addLocationIds?.length ||
+    removeLocationIds?.length ||
+    addFranchiseIds?.length ||
+    removeFranchiseIds?.length
 
   if (hasAssignmentChanges) {
     if (!hasPermission(actorRole, "user:update:assignments")) {
@@ -108,7 +121,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       const allowed = await getFranchiseMgrLocationIds(actorId)
       const invalid = (addLocationIds as string[]).filter((lid) => !allowed.includes(lid))
       if (invalid.length > 0) {
-        return NextResponse.json({ error: "Forbidden: location outside your franchise" }, { status: 403 })
+        return NextResponse.json(
+          { error: "Forbidden: location outside your franchise" },
+          { status: 403 }
+        )
       }
     }
 
@@ -116,7 +132,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       const allowed = await getSupervisorLocationIds(actorId)
       const invalid = (addLocationIds as string[]).filter((lid) => !allowed.includes(lid))
       if (invalid.length > 0) {
-        return NextResponse.json({ error: "Forbidden: location outside your scope" }, { status: 403 })
+        return NextResponse.json(
+          { error: "Forbidden: location outside your scope" },
+          { status: 403 }
+        )
       }
     }
   }
@@ -125,13 +144,23 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const after: Record<string, unknown> = {}
 
   const userUpdates: Record<string, unknown> = {}
-  if (firstName) { before.firstName = target.firstName; after.firstName = firstName; userUpdates.firstName = firstName }
-  if (lastName) { before.lastName = target.lastName; after.lastName = lastName; userUpdates.lastName = lastName }
+  if (firstName) {
+    before.firstName = target.firstName
+    after.firstName = firstName
+    userUpdates.firstName = firstName
+  }
+  if (lastName) {
+    before.lastName = target.lastName
+    after.lastName = lastName
+    userUpdates.lastName = lastName
+  }
   if (firstName || lastName) {
     userUpdates.name = `${firstName ?? target.firstName} ${lastName ?? target.lastName}`
   }
   if (role !== undefined && role !== target.role) {
-    before.role = target.role; after.role = role; userUpdates.role = role
+    before.role = target.role
+    after.role = role
+    userUpdates.role = role
   }
 
   const updatedUser = await db.$transaction(async (tx) => {
@@ -139,21 +168,33 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     if (addLocationIds?.length) {
       await tx.userLocation.createMany({
-        data: (addLocationIds as string[]).map((locationId) => ({ userId: id, locationId, assignedById: actorId })),
+        data: (addLocationIds as string[]).map((locationId) => ({
+          userId: id,
+          locationId,
+          assignedById: actorId,
+        })),
         skipDuplicates: true,
       })
     }
     if (removeLocationIds?.length) {
-      await tx.userLocation.deleteMany({ where: { userId: id, locationId: { in: removeLocationIds as string[] } } })
+      await tx.userLocation.deleteMany({
+        where: { userId: id, locationId: { in: removeLocationIds as string[] } },
+      })
     }
     if (addFranchiseIds?.length) {
       await tx.userFranchise.createMany({
-        data: (addFranchiseIds as string[]).map((franchiseId) => ({ userId: id, franchiseId, assignedById: actorId })),
+        data: (addFranchiseIds as string[]).map((franchiseId) => ({
+          userId: id,
+          franchiseId,
+          assignedById: actorId,
+        })),
         skipDuplicates: true,
       })
     }
     if (removeFranchiseIds?.length) {
-      await tx.userFranchise.deleteMany({ where: { userId: id, franchiseId: { in: removeFranchiseIds as string[] } } })
+      await tx.userFranchise.deleteMany({
+        where: { userId: id, franchiseId: { in: removeFranchiseIds as string[] } },
+      })
     }
 
     return user
@@ -173,7 +214,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   return NextResponse.json(updatedUser)
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   const session = await getApiSession(request.headers)
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 

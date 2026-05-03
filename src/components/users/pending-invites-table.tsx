@@ -2,19 +2,33 @@
 
 import { useEffect, useState, useCallback } from "react"
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog"
 import { UserRoleBadge } from "./user-role-badge"
 import { useToast } from "@/components/ui/use-toast"
 import { formatDate } from "@/lib/utils"
 import { MoreHorizontal, RefreshCw } from "lucide-react"
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
 interface Invitation {
@@ -45,14 +59,19 @@ export function PendingInvitesTable() {
     setLoading(false)
   }, [])
 
-  useEffect(() => { fetchInvitations() }, [fetchInvitations])
+  useEffect(() => {
+    fetchInvitations()
+  }, [fetchInvitations])
 
   const handleResend = async (invitation: Invitation) => {
     setResending(invitation.id)
     const res = await fetch(`/api/invitations/${invitation.token}/resend`, { method: "POST" })
     setResending(null)
     if (res.ok) {
-      toast({ title: "Invitation resent", description: `A new invite link was sent to ${invitation.email}.` })
+      toast({
+        title: "Invitation resent",
+        description: `A new invite link was sent to ${invitation.email}.`,
+      })
       fetchInvitations()
     } else {
       const data = await res.json()
@@ -67,7 +86,10 @@ export function PendingInvitesTable() {
     setDeleting(false)
     setConfirmDelete(null)
     if (res.ok) {
-      toast({ title: "Invitation cancelled", description: `Invite for ${confirmDelete.email} has been removed.` })
+      toast({
+        title: "Invitation cancelled",
+        description: `Invite for ${confirmDelete.email} has been removed.`,
+      })
       fetchInvitations()
     } else {
       const data = await res.json()
@@ -85,7 +107,9 @@ export function PendingInvitesTable() {
     <>
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          <p className="text-sm text-muted-foreground">{invitations.length} pending invitation(s)</p>
+          <p className="text-sm text-muted-foreground">
+            {invitations.length} pending invitation(s)
+          </p>
           <Button variant="outline" size="sm" onClick={fetchInvitations} className="gap-2">
             <RefreshCw className="h-3.5 w-3.5" />
             Refresh
@@ -170,14 +194,19 @@ export function PendingInvitesTable() {
         </div>
       </div>
 
-      <Dialog open={!!confirmDelete} onOpenChange={(open) => { if (!open) setConfirmDelete(null) }}>
+      <Dialog
+        open={!!confirmDelete}
+        onOpenChange={(open) => {
+          if (!open) setConfirmDelete(null)
+        }}
+      >
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>Cancel invitation</DialogTitle>
             <DialogDescription>
               Cancel the pending invite for{" "}
-              <span className="font-medium text-foreground">{confirmDelete?.email}</span>?
-              This cannot be undone.
+              <span className="font-medium text-foreground">{confirmDelete?.email}</span>? This
+              cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

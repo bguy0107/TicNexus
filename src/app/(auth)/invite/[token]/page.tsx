@@ -99,14 +99,15 @@ export default function InvitePage() {
       <CardHeader>
         <CardTitle>Accept your invitation</CardTitle>
         <CardDescription>
-          You have been invited as a{" "}
-          <strong>{getRoleLabel(invitation.role)}</strong>
+          You have been invited as a <strong>{getRoleLabel(invitation.role)}</strong>
           {invitation.franchise && ` at ${invitation.franchise.name}`}
           {invitation.location && ` — ${invitation.location.name}`}.
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <p className="text-sm text-muted-foreground mb-4">Account email: <strong>{invitation.email}</strong></p>
+        <p className="text-sm text-muted-foreground mb-4">
+          Account email: <strong>{invitation.email}</strong>
+        </p>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">

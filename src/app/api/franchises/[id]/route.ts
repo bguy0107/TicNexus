@@ -33,7 +33,9 @@ const patchSchema = z.object({
   name: z.string().min(1).optional(),
   addManagerIds: z.array(z.string()).optional(),
   removeManagerIds: z.array(z.string()).optional(),
-  addLocations: z.array(z.object({ name: z.string().min(1), address: z.string().optional() })).optional(),
+  addLocations: z
+    .array(z.object({ name: z.string().min(1), locationNumber: z.string().min(1), address: z.string().optional() }))
+    .optional(),
   removeLocationIds: z.array(z.string()).optional(),
 })
 
@@ -84,7 +86,12 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     if (addLocations?.length) {
       await tx.location.createMany({
-        data: addLocations.map((l) => ({ name: l.name, address: l.address ?? null, franchiseId: id })),
+        data: addLocations.map((l) => ({
+          name: l.name,
+          locationNumber: l.locationNumber,
+          address: l.address ?? null,
+          franchiseId: id,
+        })),
       })
       after.addedLocations = addLocations.map((l) => l.name)
     }
@@ -112,7 +119,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   return NextResponse.json({ success: true })
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   const session = await getApiSession(request.headers)
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 

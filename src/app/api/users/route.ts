@@ -27,7 +27,10 @@ export async function GET(request: NextRequest) {
 
     const franchiseIds = ufs.map((uf) => uf.franchiseId)
     const locationIds = (
-      await db.location.findMany({ where: { franchiseId: { in: franchiseIds } }, select: { id: true } })
+      await db.location.findMany({
+        where: { franchiseId: { in: franchiseIds } },
+        select: { id: true },
+      })
     ).map((l) => l.id)
 
     const users = await db.user.findMany({

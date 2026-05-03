@@ -85,15 +85,8 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "user:reactivate:below",
     "user:reset-password:below",
   ],
-  TECHNICIAN: [
-    "franchise:read:own",
-    "location:read:own",
-    "user:read:location",
-  ],
-  STORE_USER: [
-    "location:read:own",
-    "user:read:location",
-  ],
+  TECHNICIAN: ["franchise:read:own", "location:read:own", "user:read:location"],
+  STORE_USER: ["location:read:own", "user:read:location"],
 }
 
 export function hasPermission(role: Role, permission: Permission): boolean {

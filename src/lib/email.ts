@@ -44,13 +44,7 @@ export async function sendInvitationEmail({
   })
 }
 
-export async function sendPasswordResetEmail({
-  to,
-  resetUrl,
-}: {
-  to: string
-  resetUrl: string
-}) {
+export async function sendPasswordResetEmail({ to, resetUrl }: { to: string; resetUrl: string }) {
   await transporter.sendMail({
     from: `TicNexus <${process.env.GMAIL_USER}>`,
     to,

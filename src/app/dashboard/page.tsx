@@ -37,7 +37,12 @@ export default async function DashboardPage() {
 
   const stats = [
     { label: "Total Users", value: userCount, icon: Users, show: role !== "STORE_USER" },
-    { label: "Franchises", value: franchiseCount, icon: Building2, show: role === "ADMIN" || role === "TECHNICIAN" },
+    {
+      label: "Franchises",
+      value: franchiseCount,
+      icon: Building2,
+      show: role === "ADMIN" || role === "TECHNICIAN",
+    },
     { label: "Locations", value: locationCount, icon: MapPin, show: role !== "STORE_USER" },
   ].filter((s) => s.show)
 

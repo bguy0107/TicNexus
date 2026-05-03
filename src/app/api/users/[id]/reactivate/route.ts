@@ -15,14 +15,18 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const actorRole = session.user.role as Role
   const actorId = session.user.id
 
-  if (!hasPermission(actorRole, "user:reactivate:any") && !hasPermission(actorRole, "user:reactivate:below")) {
+  if (
+    !hasPermission(actorRole, "user:reactivate:any") &&
+    !hasPermission(actorRole, "user:reactivate:below")
+  ) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 
   // findUnique without deletedAt filter so we can find deactivated users
   const target = await db.user.findUnique({ where: { id } })
   if (!target) return NextResponse.json({ error: "Not found" }, { status: 404 })
-  if (!target.deletedAt) return NextResponse.json({ error: "User is already active" }, { status: 400 })
+  if (!target.deletedAt)
+    return NextResponse.json({ error: "User is already active" }, { status: 400 })
 
   if (!isHigherRole(actorRole, target.role as Role) && actorRole !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })

@@ -2,14 +2,22 @@
 
 import { useState, useEffect } from "react"
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/components/ui/use-toast"
@@ -28,15 +36,24 @@ interface AssignedUser {
 interface LocationDetail {
   id: string
   name: string
-  locationNumber: string | null
+  locationNumber: string
   address: string | null
   franchiseId: string
   franchise: { id: string; name: string }
   userLocations: { user: AssignedUser }[]
 }
 
-interface Franchise { id: string; name: string }
-interface AllUser { id: string; firstName: string; lastName: string; email: string; role: string }
+interface Franchise {
+  id: string
+  name: string
+}
+interface AllUser {
+  id: string
+  firstName: string
+  lastName: string
+  email: string
+  role: string
+}
 
 interface EditLocationDialogProps {
   location: LocationWithDetails
@@ -45,7 +62,12 @@ interface EditLocationDialogProps {
   onSuccess: () => void
 }
 
-export function EditLocationDialog({ location, open, onOpenChange, onSuccess }: EditLocationDialogProps) {
+export function EditLocationDialog({
+  location,
+  open,
+  onOpenChange,
+  onSuccess,
+}: EditLocationDialogProps) {
   const [detail, setDetail] = useState<LocationDetail | null>(null)
   const [allFranchises, setAllFranchises] = useState<Franchise[]>([])
   const [allUsers, setAllUsers] = useState<AllUser[]>([])
@@ -70,12 +92,14 @@ export function EditLocationDialog({ location, open, onOpenChange, onSuccess }: 
     ]).then(([locData, franData, usersData]) => {
       setDetail(locData)
       setName(locData.name)
-      setLocationNumber(locData.locationNumber ?? "")
+      setLocationNumber(locData.locationNumber)
       setAddress(locData.address ?? "")
       setFranchiseId(locData.franchiseId)
       setCurrentUserIds(locData.userLocations.map((ul: { user: AssignedUser }) => ul.user.id))
       setAllFranchises(franData.franchises ?? [])
-      setAllUsers((usersData.users ?? []).filter((u: AllUser & { deletedAt: unknown }) => !u.deletedAt))
+      setAllUsers(
+        (usersData.users ?? []).filter((u: AllUser & { deletedAt: unknown }) => !u.deletedAt)
+      )
       setLoadingDetail(false)
     })
   }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -92,7 +116,7 @@ export function EditLocationDialog({ location, open, onOpenChange, onSuccess }: 
     const body: Record<string, unknown> = {}
     if (name !== detail.name) body.name = name
     if (address !== (detail.address ?? "")) body.address = address
-    if (locationNumber !== (detail.locationNumber ?? "")) body.locationNumber = locationNumber
+    if (locationNumber !== detail.locationNumber) body.locationNumber = locationNumber
     if (franchiseId !== detail.franchiseId) body.franchiseId = franchiseId
     if (addUserIds.length) body.addUserIds = addUserIds
     if (removeUserIds.length) body.removeUserIds = removeUserIds
@@ -134,7 +158,6 @@ export function EditLocationDialog({ location, open, onOpenChange, onSuccess }: 
           <p className="text-sm text-muted-foreground py-4">Loading…</p>
         ) : (
           <div className="space-y-6 py-2">
-
             {/* Core fields */}
             <div className="space-y-4">
               <div className="space-y-2">
@@ -171,7 +194,9 @@ export function EditLocationDialog({ location, open, onOpenChange, onSuccess }: 
                 </SelectTrigger>
                 <SelectContent>
                   {allFranchises.map((f) => (
-                    <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                    <SelectItem key={f.id} value={f.id}>
+                      {f.name}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -190,11 +215,16 @@ export function EditLocationDialog({ location, open, onOpenChange, onSuccess }: 
                     <Badge key={u.id} variant="secondary" className="gap-1 pr-1">
                       {u.firstName} {u.lastName}
                       <span className="text-muted-foreground text-xs ml-1">
-                        {u.role.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase())}
+                        {u.role
+                          .replace(/_/g, " ")
+                          .toLowerCase()
+                          .replace(/\b\w/g, (c) => c.toUpperCase())}
                       </span>
                       <button
                         type="button"
-                        onClick={() => setCurrentUserIds((prev) => prev.filter((id) => id !== u.id))}
+                        onClick={() =>
+                          setCurrentUserIds((prev) => prev.filter((id) => id !== u.id))
+                        }
                         className="ml-1 rounded-sm hover:text-destructive"
                       >
                         <X className="h-3 w-3" />
@@ -219,7 +249,6 @@ export function EditLocationDialog({ location, open, onOpenChange, onSuccess }: 
                 </Select>
               )}
             </div>
-
           </div>
         )}
 
@@ -227,7 +256,7 @@ export function EditLocationDialog({ location, open, onOpenChange, onSuccess }: 
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={saving || loadingDetail || !name.trim()}>
+          <Button onClick={handleSave} disabled={saving || loadingDetail || !name.trim() || !locationNumber.trim()}>
             {saving ? "Saving…" : "Save changes"}
           </Button>
         </DialogFooter>

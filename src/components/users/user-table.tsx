@@ -3,12 +3,22 @@
 import { useEffect, useState, useCallback } from "react"
 import { useSession } from "@/lib/auth-client"
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog"
 import { UserRoleBadge } from "./user-role-badge"
 import { InviteUserDialog } from "./invite-user-dialog"
@@ -17,7 +27,11 @@ import { useToast } from "@/components/ui/use-toast"
 import { formatDate } from "@/lib/utils"
 import { MoreHorizontal } from "lucide-react"
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import type { UserWithRelations, Role } from "@/types"
 
@@ -26,7 +40,9 @@ export function UserTable() {
   const [users, setUsers] = useState<UserWithRelations[]>([])
   const [loading, setLoading] = useState(true)
   const [editingUser, setEditingUser] = useState<UserWithRelations | null>(null)
-  const [confirmDeactivate, setConfirmDeactivate] = useState<{ id: string; name: string } | null>(null)
+  const [confirmDeactivate, setConfirmDeactivate] = useState<{ id: string; name: string } | null>(
+    null
+  )
   const [deactivating, setDeactivating] = useState(false)
   const { toast } = useToast()
 
@@ -38,7 +54,9 @@ export function UserTable() {
     setLoading(false)
   }, [])
 
-  useEffect(() => { fetchUsers() }, [fetchUsers])
+  useEffect(() => {
+    fetchUsers()
+  }, [fetchUsers])
 
   const handleDeactivateConfirmed = async () => {
     if (!confirmDeactivate) return
@@ -47,7 +65,10 @@ export function UserTable() {
     setDeactivating(false)
     setConfirmDeactivate(null)
     if (res.ok) {
-      toast({ title: "User deactivated", description: `${confirmDeactivate.name} has been deactivated.` })
+      toast({
+        title: "User deactivated",
+        description: `${confirmDeactivate.name} has been deactivated.`,
+      })
       fetchUsers()
     } else {
       const data = await res.json()
@@ -118,8 +139,10 @@ export function UserTable() {
                       {user.userFranchises.length > 0
                         ? user.userFranchises.map((uf) => uf.franchise.name).join(", ")
                         : user.userLocations.length > 0
-                        ? user.userLocations.map((ul) => `${ul.location.name} (${ul.location.franchise.name})`).join(", ")
-                        : "—"}
+                          ? user.userLocations
+                              .map((ul) => `${ul.location.name} (${ul.location.franchise.name})`)
+                              .join(", ")
+                          : "—"}
                     </TableCell>
                     <TableCell>
                       {user.deletedAt ? (
@@ -155,7 +178,10 @@ export function UserTable() {
                               <DropdownMenuItem
                                 className="text-destructive cursor-pointer"
                                 onClick={() =>
-                                  setConfirmDeactivate({ id: user.id, name: `${user.firstName} ${user.lastName}` })
+                                  setConfirmDeactivate({
+                                    id: user.id,
+                                    name: `${user.firstName} ${user.lastName}`,
+                                  })
                                 }
                               >
                                 Deactivate
@@ -188,26 +214,41 @@ export function UserTable() {
         <EditUserDialog
           user={editingUser}
           open={!!editingUser}
-          onOpenChange={(open) => { if (!open) setEditingUser(null) }}
+          onOpenChange={(open) => {
+            if (!open) setEditingUser(null)
+          }}
           onSuccess={fetchUsers}
         />
       )}
 
-      <Dialog open={!!confirmDeactivate} onOpenChange={(open) => { if (!open) setConfirmDeactivate(null) }}>
+      <Dialog
+        open={!!confirmDeactivate}
+        onOpenChange={(open) => {
+          if (!open) setConfirmDeactivate(null)
+        }}
+      >
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>Deactivate user</DialogTitle>
             <DialogDescription>
               Deactivate{" "}
-              <span className="font-medium text-foreground">{confirmDeactivate?.name}</span>?
-              They will lose access immediately.
+              <span className="font-medium text-foreground">{confirmDeactivate?.name}</span>? They
+              will lose access immediately.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmDeactivate(null)} disabled={deactivating}>
+            <Button
+              variant="outline"
+              onClick={() => setConfirmDeactivate(null)}
+              disabled={deactivating}
+            >
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleDeactivateConfirmed} disabled={deactivating}>
+            <Button
+              variant="destructive"
+              onClick={handleDeactivateConfirmed}
+              disabled={deactivating}
+            >
               {deactivating ? "Deactivating…" : "Deactivate"}
             </Button>
           </DialogFooter>

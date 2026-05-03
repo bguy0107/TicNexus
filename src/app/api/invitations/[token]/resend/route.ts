@@ -3,7 +3,11 @@ import { db } from "@/lib/db"
 import { getApiSession } from "@/lib/session"
 import { sendInvitationEmail } from "@/lib/email"
 import { createAuditLog } from "@/lib/audit"
-import { getFranchiseMgrFranchiseIds, getFranchiseMgrLocationIds, getSupervisorLocationIds } from "@/lib/scope"
+import {
+  getFranchiseMgrFranchiseIds,
+  getFranchiseMgrLocationIds,
+  getSupervisorLocationIds,
+} from "@/lib/scope"
 import { getIpFromRequest } from "@/lib/utils"
 import { randomUUID } from "crypto"
 import type { Role } from "@prisma/client"
@@ -31,7 +35,10 @@ async function isInvitationInScope(
   return false
 }
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ token: string }> }) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ token: string }> }
+) {
   const session = await getApiSession(request.headers)
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
@@ -41,7 +48,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   const invitation = await db.invitation.findUnique({ where: { token } })
   if (!invitation) return NextResponse.json({ error: "Not found" }, { status: 404 })
-  if (invitation.acceptedAt) return NextResponse.json({ error: "Invitation already accepted" }, { status: 400 })
+  if (invitation.acceptedAt)
+    return NextResponse.json({ error: "Invitation already accepted" }, { status: 400 })
 
   if (actorRole !== "ADMIN") {
     const allowed = await isInvitationInScope(actorRole, actorId, invitation)

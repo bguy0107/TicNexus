@@ -20,7 +20,10 @@ export async function getSupervisorLocationIds(userId: string): Promise<string[]
   return rows.map((r) => r.locationId)
 }
 
-export async function isTargetInFranchiseMgrScope(actorId: string, targetUserId: string): Promise<boolean> {
+export async function isTargetInFranchiseMgrScope(
+  actorId: string,
+  targetUserId: string
+): Promise<boolean> {
   const [franchiseIds, locationIds] = await Promise.all([
     getFranchiseMgrFranchiseIds(actorId),
     getFranchiseMgrLocationIds(actorId),
@@ -43,7 +46,10 @@ export async function isTargetInFranchiseMgrScope(actorId: string, targetUserId:
 }
 
 // Works for SUPERVISOR, TECHNICIAN, and STORE_USER — any role with userLocation assignments
-export async function isTargetInLocationScope(actorId: string, targetUserId: string): Promise<boolean> {
+export async function isTargetInLocationScope(
+  actorId: string,
+  targetUserId: string
+): Promise<boolean> {
   const locationIds = await getSupervisorLocationIds(actorId)
   if (locationIds.length === 0) return false
 

@@ -2,23 +2,45 @@
 
 import { useState, useEffect } from "react"
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/components/ui/use-toast"
 import { X, Plus } from "lucide-react"
 import type { FranchiseWithDetails } from "@/types"
 
-interface Manager { id: string; firstName: string; lastName: string; email: string }
-interface Location { id: string; name: string; address: string | null }
-interface NewLocation { tempId: string; name: string; address: string }
+interface Manager {
+  id: string
+  firstName: string
+  lastName: string
+  email: string
+}
+interface Location {
+  id: string
+  name: string
+  address: string | null
+}
+interface NewLocation {
+  tempId: string
+  name: string
+  locationNumber: string
+  address: string
+}
 
 interface FranchiseDetail {
   id: string
@@ -34,7 +56,12 @@ interface EditFranchiseDialogProps {
   onSuccess: () => void
 }
 
-export function EditFranchiseDialog({ franchise, open, onOpenChange, onSuccess }: EditFranchiseDialogProps) {
+export function EditFranchiseDialog({
+  franchise,
+  open,
+  onOpenChange,
+  onSuccess,
+}: EditFranchiseDialogProps) {
   const [detail, setDetail] = useState<FranchiseDetail | null>(null)
   const [allFMUsers, setAllFMUsers] = useState<Manager[]>([])
   const [loadingDetail, setLoadingDetail] = useState(false)
@@ -44,6 +71,7 @@ export function EditFranchiseDialog({ franchise, open, onOpenChange, onSuccess }
   const [currentLocationIds, setCurrentLocationIds] = useState<string[]>([])
   const [newLocations, setNewLocations] = useState<NewLocation[]>([])
   const [newLocName, setNewLocName] = useState("")
+  const [newLocNumber, setNewLocNumber] = useState("")
   const [newLocAddress, setNewLocAddress] = useState("")
 
   const [saving, setSaving] = useState(false)
@@ -53,6 +81,7 @@ export function EditFranchiseDialog({ franchise, open, onOpenChange, onSuccess }
     if (!open) return
     setNewLocations([])
     setNewLocName("")
+    setNewLocNumber("")
     setNewLocAddress("")
 
     setLoadingDetail(true)
@@ -75,12 +104,13 @@ export function EditFranchiseDialog({ franchise, open, onOpenChange, onSuccess }
   const originalLocationIds = detail?.locations.map((l) => l.id) ?? []
 
   const handleAddNewLocation = () => {
-    if (!newLocName.trim()) return
+    if (!newLocName.trim() || !newLocNumber.trim()) return
     setNewLocations((prev) => [
       ...prev,
-      { tempId: crypto.randomUUID(), name: newLocName.trim(), address: newLocAddress.trim() },
+      { tempId: crypto.randomUUID(), name: newLocName.trim(), locationNumber: newLocNumber.trim(), address: newLocAddress.trim() },
     ])
     setNewLocName("")
+    setNewLocNumber("")
     setNewLocAddress("")
   }
 
@@ -96,7 +126,12 @@ export function EditFranchiseDialog({ franchise, open, onOpenChange, onSuccess }
     if (name.trim() !== detail.name) body.name = name.trim()
     if (addManagerIds.length) body.addManagerIds = addManagerIds
     if (removeManagerIds.length) body.removeManagerIds = removeManagerIds
-    if (newLocations.length) body.addLocations = newLocations.map(({ name: n, address: a }) => ({ name: n, address: a || undefined }))
+    if (newLocations.length)
+      body.addLocations = newLocations.map(({ name: n, locationNumber: ln, address: a }) => ({
+        name: n,
+        locationNumber: ln,
+        address: a || undefined,
+      }))
     if (removeLocationIds.length) body.removeLocationIds = removeLocationIds
 
     if (Object.keys(body).length === 0) {
@@ -122,9 +157,9 @@ export function EditFranchiseDialog({ franchise, open, onOpenChange, onSuccess }
     }
   }
 
-  const currentManagers = detail?.userFranchises
-    .map((uf) => uf.user)
-    .filter((u) => currentManagerIds.includes(u.id)) ?? []
+  const currentManagers =
+    detail?.userFranchises.map((uf) => uf.user).filter((u) => currentManagerIds.includes(u.id)) ??
+    []
 
   const availableFMUsers = allFMUsers.filter((u) => !currentManagerIds.includes(u.id))
 
@@ -141,7 +176,6 @@ export function EditFranchiseDialog({ franchise, open, onOpenChange, onSuccess }
           <p className="text-sm text-muted-foreground py-4">Loading…</p>
         ) : (
           <div className="space-y-6 py-2">
-
             {/* Name */}
             <div className="space-y-2">
               <Label>Franchise name</Label>
@@ -162,7 +196,9 @@ export function EditFranchiseDialog({ franchise, open, onOpenChange, onSuccess }
                       {m.firstName} {m.lastName}
                       <button
                         type="button"
-                        onClick={() => setCurrentManagerIds((prev) => prev.filter((id) => id !== m.id))}
+                        onClick={() =>
+                          setCurrentManagerIds((prev) => prev.filter((id) => id !== m.id))
+                        }
                         className="ml-1 rounded-sm hover:text-destructive"
                       >
                         <X className="h-3 w-3" />
@@ -203,14 +239,21 @@ export function EditFranchiseDialog({ franchise, open, onOpenChange, onSuccess }
               ) : (
                 <ul className="space-y-1">
                   {currentLocations.map((l) => (
-                    <li key={l.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+                    <li
+                      key={l.id}
+                      className="flex items-center justify-between rounded-md border px-3 py-2 text-sm"
+                    >
                       <span>
                         {l.name}
-                        {l.address && <span className="ml-2 text-muted-foreground text-xs">{l.address}</span>}
+                        {l.address && (
+                          <span className="ml-2 text-muted-foreground text-xs">{l.address}</span>
+                        )}
                       </span>
                       <button
                         type="button"
-                        onClick={() => setCurrentLocationIds((prev) => prev.filter((id) => id !== l.id))}
+                        onClick={() =>
+                          setCurrentLocationIds((prev) => prev.filter((id) => id !== l.id))
+                        }
                         className="text-muted-foreground hover:text-destructive"
                       >
                         <X className="h-4 w-4" />
@@ -219,15 +262,21 @@ export function EditFranchiseDialog({ franchise, open, onOpenChange, onSuccess }
                   ))}
                   {/* Queued new locations */}
                   {newLocations.map((l) => (
-                    <li key={l.tempId} className="flex items-center justify-between rounded-md border border-dashed px-3 py-2 text-sm text-muted-foreground">
+                    <li
+                      key={l.tempId}
+                      className="flex items-center justify-between rounded-md border border-dashed px-3 py-2 text-sm text-muted-foreground"
+                    >
                       <span>
+                        <span className="font-mono text-xs mr-1">{l.locationNumber}</span>
                         {l.name}
                         {l.address && <span className="ml-2 text-xs">{l.address}</span>}
                         <span className="ml-2 text-xs">(new)</span>
                       </span>
                       <button
                         type="button"
-                        onClick={() => setNewLocations((prev) => prev.filter((n) => n.tempId !== l.tempId))}
+                        onClick={() =>
+                          setNewLocations((prev) => prev.filter((n) => n.tempId !== l.tempId))
+                        }
                         className="hover:text-destructive"
                       >
                         <X className="h-4 w-4" />
@@ -240,6 +289,13 @@ export function EditFranchiseDialog({ franchise, open, onOpenChange, onSuccess }
               {/* Add new location */}
               <div className="space-y-2 rounded-md border border-dashed p-3">
                 <p className="text-xs text-muted-foreground font-medium">Add location</p>
+                <Input
+                  placeholder="Location ID (e.g. 001)"
+                  value={newLocNumber}
+                  onChange={(e) => setNewLocNumber(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleAddNewLocation()}
+                  className="font-mono"
+                />
                 <Input
                   placeholder="Location name"
                   value={newLocName}
@@ -258,14 +314,13 @@ export function EditFranchiseDialog({ franchise, open, onOpenChange, onSuccess }
                   size="sm"
                   className="gap-1"
                   onClick={handleAddNewLocation}
-                  disabled={!newLocName.trim()}
+                  disabled={!newLocName.trim() || !newLocNumber.trim()}
                 >
                   <Plus className="h-3.5 w-3.5" />
                   Add
                 </Button>
               </div>
             </div>
-
           </div>
         )}
 

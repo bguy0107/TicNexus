@@ -3,7 +3,11 @@ import { db } from "@/lib/db"
 import { auth } from "@/lib/auth"
 import { getApiSession } from "@/lib/session"
 import { createAuditLog } from "@/lib/audit"
-import { getFranchiseMgrFranchiseIds, getFranchiseMgrLocationIds, getSupervisorLocationIds } from "@/lib/scope"
+import {
+  getFranchiseMgrFranchiseIds,
+  getFranchiseMgrLocationIds,
+  getSupervisorLocationIds,
+} from "@/lib/scope"
 import { getIpFromRequest } from "@/lib/utils"
 import { z } from "zod"
 import type { Role } from "@prisma/client"
@@ -31,7 +35,10 @@ async function isInvitationInScope(
   return false
 }
 
-export async function GET(_request: NextRequest, { params }: { params: Promise<{ token: string }> }) {
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ token: string }> }
+) {
   const { token } = await params
 
   const invitation = await db.invitation.findUnique({
@@ -47,8 +54,10 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   })
 
   if (!invitation) return NextResponse.json({ error: "Invitation not found" }, { status: 404 })
-  if (invitation.acceptedAt) return NextResponse.json({ error: "Invitation already accepted" }, { status: 410 })
-  if (invitation.expiresAt < new Date()) return NextResponse.json({ error: "Invitation has expired" }, { status: 410 })
+  if (invitation.acceptedAt)
+    return NextResponse.json({ error: "Invitation already accepted" }, { status: 410 })
+  if (invitation.expiresAt < new Date())
+    return NextResponse.json({ error: "Invitation has expired" }, { status: 410 })
 
   return NextResponse.json(invitation)
 }
@@ -59,13 +68,18 @@ const schema = z.object({
   password: z.string().min(8),
 })
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ token: string }> }) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ token: string }> }
+) {
   const { token } = await params
 
   const invitation = await db.invitation.findUnique({ where: { token } })
   if (!invitation) return NextResponse.json({ error: "Invitation not found" }, { status: 404 })
-  if (invitation.acceptedAt) return NextResponse.json({ error: "Already accepted" }, { status: 410 })
-  if (invitation.expiresAt < new Date()) return NextResponse.json({ error: "Expired" }, { status: 410 })
+  if (invitation.acceptedAt)
+    return NextResponse.json({ error: "Already accepted" }, { status: 410 })
+  if (invitation.expiresAt < new Date())
+    return NextResponse.json({ error: "Expired" }, { status: 410 })
 
   const body = await request.json()
   const parsed = schema.safeParse(body)
@@ -131,7 +145,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   return NextResponse.json({ success: true })
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: Promise<{ token: string }> }) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ token: string }> }
+) {
   const session = await getApiSession(request.headers)
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
@@ -141,7 +158,8 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 
   const invitation = await db.invitation.findUnique({ where: { token } })
   if (!invitation) return NextResponse.json({ error: "Not found" }, { status: 404 })
-  if (invitation.acceptedAt) return NextResponse.json({ error: "Invitation already accepted" }, { status: 400 })
+  if (invitation.acceptedAt)
+    return NextResponse.json({ error: "Invitation already accepted" }, { status: 400 })
 
   if (actorRole !== "ADMIN") {
     const allowed = await isInvitationInScope(actorRole, actorId, invitation)
