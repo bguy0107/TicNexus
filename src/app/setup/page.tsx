@@ -108,9 +108,7 @@ export default function SetupPage() {
               <div className="space-y-2">
                 <Label>Email</Label>
                 <Input type="email" {...register("email")} />
-                {errors.email && (
-                  <p className="text-xs text-destructive">{errors.email.message}</p>
-                )}
+                {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
               </div>
               <div className="space-y-2">
                 <Label>Password</Label>

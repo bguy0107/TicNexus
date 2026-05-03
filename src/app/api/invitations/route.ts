@@ -4,22 +4,34 @@ import { db } from "@/lib/db"
 import { sendInvitationEmail } from "@/lib/email"
 import { createAuditLog } from "@/lib/audit"
 import { canCreateRole } from "@/lib/permissions"
+import {
+  getFranchiseMgrFranchiseIds,
+  getFranchiseMgrLocationIds,
+  getSupervisorLocationIds,
+} from "@/lib/scope"
 import { getIpFromRequest } from "@/lib/utils"
 import { z } from "zod"
 import type { Role } from "@prisma/client"
 
-const schema = z.object({
-  email: z.string().email(),
-  role: z.enum(["ADMIN", "FRANCHISE_MANAGER", "SUPERVISOR", "TECHNICIAN", "STORE_USER"]),
-  franchiseId: z.string().optional(),
-  locationId: z.string().optional(),
-})
+const schema = z
+  .object({
+    email: z.string().email(),
+    role: z.enum(["ADMIN", "FRANCHISE_MANAGER", "SUPERVISOR", "TECHNICIAN", "STORE_USER"]),
+    department: z.enum(["IT", "MAINTENANCE"]).optional(),
+    franchiseId: z.string().optional(),
+    locationId: z.string().optional(),
+  })
+  .refine((d) => d.role !== "TECHNICIAN" || d.department !== undefined, {
+    message: "Department is required for Technician invitations",
+    path: ["department"],
+  })
 
 export async function POST(request: NextRequest) {
   const session = await getApiSession(request.headers)
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   const actorRole = session.user.role as Role
+  const actorId = session.user.id
 
   const body = await request.json()
   const parsed = schema.safeParse(body)
@@ -27,10 +39,35 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
   }
 
-  const { email, role, franchiseId, locationId } = parsed.data
+  const { email, role, department, franchiseId, locationId } = parsed.data
 
   if (!canCreateRole(actorRole, role as Role)) {
     return NextResponse.json({ error: "You cannot invite users with that role" }, { status: 403 })
+  }
+
+  // Scope check: FM can only invite to their own franchises/locations
+  if (actorRole === "FRANCHISE_MANAGER") {
+    const fmFranchiseIds = await getFranchiseMgrFranchiseIds(actorId)
+    if (franchiseId && !fmFranchiseIds.includes(franchiseId)) {
+      return NextResponse.json({ error: "Forbidden: franchise not in your scope" }, { status: 403 })
+    }
+    if (locationId) {
+      const fmLocationIds = await getFranchiseMgrLocationIds(actorId)
+      if (!fmLocationIds.includes(locationId)) {
+        return NextResponse.json(
+          { error: "Forbidden: location not in your franchise" },
+          { status: 403 }
+        )
+      }
+    }
+  }
+
+  // Scope check: Supervisor can only invite to their assigned locations
+  if (actorRole === "SUPERVISOR" && locationId) {
+    const supervisorLocationIds = await getSupervisorLocationIds(actorId)
+    if (!supervisorLocationIds.includes(locationId)) {
+      return NextResponse.json({ error: "Forbidden: location not in your scope" }, { status: 403 })
+    }
   }
 
   const existing = await db.user.findUnique({ where: { email } })
@@ -42,7 +79,10 @@ export async function POST(request: NextRequest) {
     where: { email, acceptedAt: null, expiresAt: { gt: new Date() } },
   })
   if (pendingInvite) {
-    return NextResponse.json({ error: "An active invitation already exists for this email" }, { status: 409 })
+    return NextResponse.json(
+      { error: "An active invitation already exists for this email" },
+      { status: 409 }
+    )
   }
 
   const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000)
@@ -50,9 +90,10 @@ export async function POST(request: NextRequest) {
     data: {
       email,
       role: role as Role,
+      department: department ?? null,
       franchiseId: franchiseId ?? null,
       locationId: locationId ?? null,
-      invitedById: session.user.id,
+      invitedById: actorId,
       expiresAt,
     },
   })
@@ -63,7 +104,7 @@ export async function POST(request: NextRequest) {
   await sendInvitationEmail({ to: email, inviterName, role, inviteUrl })
 
   await createAuditLog({
-    actorId: session.user.id,
+    actorId,
     action: "INVITE_SENT",
     entityType: "invitation",
     entityId: invitation.id,
@@ -78,10 +119,40 @@ export async function GET(request: NextRequest) {
   const session = await getApiSession(request.headers)
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
+  const actorRole = session.user.role as Role
+  const actorId = session.user.id
+
+  // Base filter: not yet accepted (include expired so admins can resend)
+  const baseWhere = { acceptedAt: null }
+
+  let where = baseWhere
+
+  if (actorRole === "FRANCHISE_MANAGER") {
+    const [franchiseIds, locationIds] = await Promise.all([
+      getFranchiseMgrFranchiseIds(actorId),
+      getFranchiseMgrLocationIds(actorId),
+    ])
+    where = {
+      ...baseWhere,
+      OR: [
+        { invitedById: actorId },
+        { franchiseId: { in: franchiseIds } },
+        { locationId: { in: locationIds } },
+      ],
+    } as typeof baseWhere
+  } else if (actorRole === "SUPERVISOR") {
+    const locationIds = await getSupervisorLocationIds(actorId)
+    where = {
+      ...baseWhere,
+      OR: [{ invitedById: actorId }, { locationId: { in: locationIds } }],
+    } as typeof baseWhere
+  }
+
   const invitations = await db.invitation.findMany({
-    where: { acceptedAt: null, expiresAt: { gt: new Date() } },
+    where,
     select: {
       id: true,
+      token: true,
       email: true,
       role: true,
       expiresAt: true,

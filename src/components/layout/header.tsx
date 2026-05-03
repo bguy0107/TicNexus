@@ -54,11 +54,16 @@ export function Header({ firstName, lastName, email, role }: HeaderProps) {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuLabel>
-            <p className="font-medium">{firstName} {lastName}</p>
+            <p className="font-medium">
+              {firstName} {lastName}
+            </p>
             <p className="text-xs text-muted-foreground font-normal">{email}</p>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem className="gap-2 cursor-pointer text-destructive" onClick={handleSignOut}>
+          <DropdownMenuItem
+            className="gap-2 cursor-pointer text-destructive"
+            onClick={handleSignOut}
+          >
             <LogOut className="h-4 w-4" />
             Sign out
           </DropdownMenuItem>

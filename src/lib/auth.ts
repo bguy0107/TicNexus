@@ -1,6 +1,7 @@
 import { betterAuth } from "better-auth"
 import { prismaAdapter } from "better-auth/adapters/prisma"
 import { db } from "./db"
+import { sendPasswordResetEmail } from "./email"
 
 const appUrl = process.env.BETTER_AUTH_URL ?? "http://localhost:3000"
 const isHttps = appUrl.startsWith("https://")
@@ -14,6 +15,9 @@ export const auth = betterAuth({
     requireEmailVerification: false,
     minPasswordLength: 8,
     autoSignIn: false,
+    sendResetPassword: async ({ user, url }) => {
+      await sendPasswordResetEmail({ to: user.email, resetUrl: url })
+    },
   },
   session: {
     expiresIn: 60 * 60 * 24 * 7,

@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client"
-import { auth } from "../src/lib/auth"
+import { hashPassword } from "@better-auth/utils/password"
 
 const db = new PrismaClient()
 
@@ -15,6 +15,13 @@ const users = [
     firstName: "Franchise",
     lastName: "Manager",
     email: "franchise@ticnexus.com",
+    password: "Manager1234!",
+    role: "FRANCHISE_MANAGER" as const,
+  },
+  {
+    firstName: "Franchise",
+    lastName: "Manager Two",
+    email: "franchise2@ticnexus.com",
     password: "Manager1234!",
     role: "FRANCHISE_MANAGER" as const,
   },
@@ -55,9 +62,29 @@ const users = [
   },
 ]
 
+const franchiseData = [
+  {
+    name: "Franchise One",
+    managerEmail: "franchise@ticnexus.com",
+    locations: [
+      { locationNumber: "1A", name: "Location 1A" },
+      { locationNumber: "1B", name: "Location 1B" },
+    ],
+  },
+  {
+    name: "Franchise Two",
+    managerEmail: "franchise2@ticnexus.com",
+    locations: [
+      { locationNumber: "2A", name: "Location 2A" },
+      { locationNumber: "2B", name: "Location 2B" },
+    ],
+  },
+]
+
 async function seed() {
   console.log("Seeding database...")
 
+  // ── Users ────────────────────────────────────────────────────────────────────
   for (const u of users) {
     const existing = await db.user.findUnique({ where: { email: u.email } })
     if (existing) {
@@ -65,37 +92,85 @@ async function seed() {
       continue
     }
 
-    const result = await auth.api.signUpEmail({
-      body: {
-        email: u.email,
-        password: u.password,
-        name: `${u.firstName} ${u.lastName}`,
-        firstName: u.firstName,
-        lastName: u.lastName,
-      } as NonNullable<Parameters<typeof auth.api.signUpEmail>[0]>["body"],
-    })
+    const id = crypto.randomUUID()
+    const hashed = await hashPassword(u.password)
+    const now = new Date()
 
-    if (!result?.user) {
-      console.error(`  error creating ${u.email}`)
-      continue
-    }
-
-    await db.user.update({
-      where: { id: result.user.id },
+    await db.user.create({
       data: {
+        id,
+        name: `${u.firstName} ${u.lastName}`,
+        email: u.email,
+        emailVerified: true,
         firstName: u.firstName,
         lastName: u.lastName,
         role: u.role,
-        emailVerified: true,
+        createdAt: now,
+        updatedAt: now,
+      },
+    })
+
+    await db.account.create({
+      data: {
+        id: crypto.randomUUID(),
+        accountId: u.email,
+        providerId: "credential",
+        userId: id,
+        password: hashed,
+        createdAt: now,
+        updatedAt: now,
       },
     })
 
     console.log(`  created ${u.role.padEnd(17)} ${u.email}  /  ${u.password}`)
   }
 
-  console.log("Done.")
+  // ── Franchises, Locations, and FM assignments ─────────────────────────────
+  console.log("\nSeeding franchises and locations...")
+
+  for (const fd of franchiseData) {
+    let franchise = await db.franchise.findFirst({ where: { name: fd.name, deletedAt: null } })
+    if (!franchise) {
+      franchise = await db.franchise.create({ data: { name: fd.name } })
+      console.log(`  created franchise    ${fd.name}`)
+    } else {
+      console.log(`  skip  franchise      ${fd.name} (already exists)`)
+    }
+
+    for (const loc of fd.locations) {
+      const existing = await db.location.findFirst({
+        where: { name: loc.name, franchiseId: franchise.id, deletedAt: null },
+      })
+      if (!existing) {
+        await db.location.create({
+          data: { name: loc.name, locationNumber: loc.locationNumber, franchiseId: franchise.id },
+        })
+        console.log(`    created location   ${loc.name}`)
+      } else {
+        console.log(`    skip  location     ${loc.name} (already exists)`)
+      }
+    }
+
+    const manager = await db.user.findUnique({ where: { email: fd.managerEmail } })
+    if (manager) {
+      const alreadyAssigned = await db.userFranchise.findUnique({
+        where: { userId_franchiseId: { userId: manager.id, franchiseId: franchise.id } },
+      })
+      if (!alreadyAssigned) {
+        await db.userFranchise.create({ data: { userId: manager.id, franchiseId: franchise.id } })
+        console.log(`  assigned FM          ${fd.managerEmail} → ${fd.name}`)
+      } else {
+        console.log(`  skip  FM assignment  ${fd.managerEmail} → ${fd.name} (already assigned)`)
+      }
+    }
+  }
+
+  console.log("\nDone.")
 }
 
 seed()
-  .catch((e) => { console.error(e); process.exit(1) })
+  .catch((e) => {
+    console.error(e)
+    process.exit(1)
+  })
   .finally(() => db.$disconnect())

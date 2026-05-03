@@ -1,6 +1,6 @@
-import type { Role } from "@prisma/client"
+import type { Role, Department } from "@prisma/client"
 
-export type { Role }
+export type { Role, Department }
 
 export interface UserWithRelations {
   id: string
@@ -9,6 +9,7 @@ export interface UserWithRelations {
   name: string
   email: string
   role: Role
+  department: Department | null
   createdAt: Date | string
   deletedAt: Date | string | null
   userFranchises: Array<{
@@ -33,6 +34,7 @@ export interface FranchiseWithDetails {
 export interface LocationWithDetails {
   id: string
   name: string
+  locationNumber: string
   address: string | null
   franchiseId: string
   franchise: { name: string }
@@ -46,6 +48,7 @@ export interface LocationWithDetails {
 export interface InvitationPayload {
   email: string
   role: Role
+  department?: Department
   franchiseId?: string
   locationId?: string
 }

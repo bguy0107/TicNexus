@@ -2,20 +2,35 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import {
-  Users,
-  Building2,
-  MapPin,
-  LayoutDashboard,
-} from "lucide-react"
+import { Users, Building2, MapPin, LayoutDashboard } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Role } from "@prisma/client"
 
 const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["ADMIN", "FRANCHISE_MANAGER", "SUPERVISOR", "TECHNICIAN", "STORE_USER"] },
-  { href: "/dashboard/users", label: "Users", icon: Users, roles: ["ADMIN", "FRANCHISE_MANAGER", "SUPERVISOR"] },
-  { href: "/dashboard/franchises", label: "Franchises", icon: Building2, roles: ["ADMIN", "TECHNICIAN"] },
-  { href: "/dashboard/locations", label: "Locations", icon: MapPin, roles: ["ADMIN", "FRANCHISE_MANAGER", "SUPERVISOR", "TECHNICIAN"] },
+  {
+    href: "/dashboard",
+    label: "Dashboard",
+    icon: LayoutDashboard,
+    roles: ["ADMIN", "FRANCHISE_MANAGER", "SUPERVISOR", "TECHNICIAN", "STORE_USER"],
+  },
+  {
+    href: "/dashboard/users",
+    label: "Users",
+    icon: Users,
+    roles: ["ADMIN", "FRANCHISE_MANAGER", "SUPERVISOR"],
+  },
+  {
+    href: "/dashboard/franchises",
+    label: "Franchises",
+    icon: Building2,
+    roles: ["ADMIN", "TECHNICIAN"],
+  },
+  {
+    href: "/dashboard/locations",
+    label: "Locations",
+    icon: MapPin,
+    roles: ["ADMIN", "FRANCHISE_MANAGER", "SUPERVISOR", "TECHNICIAN"],
+  },
 ] as const
 
 interface SidebarProps {

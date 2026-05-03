@@ -28,17 +28,17 @@ cp .env.example .env
 
 Edit `.env` and fill in every value:
 
-| Variable | Description |
-|---|---|
-| `DATABASE_URL` | Full PostgreSQL connection string. Must match the `POSTGRES_*` values below. |
-| `POSTGRES_USER` | Database username |
-| `POSTGRES_PASSWORD` | Database password — use a strong random value |
-| `POSTGRES_DB` | Database name |
-| `NEXT_PUBLIC_APP_URL` | Full public URL of the app, e.g. `https://app.example.com` |
-| `BETTER_AUTH_URL` | Same as `NEXT_PUBLIC_APP_URL` |
-| `BETTER_AUTH_SECRET` | Random 32-byte secret. Generate with: `openssl rand -base64 32` |
-| `GMAIL_USER` | Gmail address used to send transactional email |
-| `GMAIL_APP_PASSWORD` | [Google App Password](https://myaccount.google.com/apppasswords) (not your account password) |
+| Variable              | Description                                                                                  |
+| --------------------- | -------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`        | Full PostgreSQL connection string. Must match the `POSTGRES_*` values below.                 |
+| `POSTGRES_USER`       | Database username                                                                            |
+| `POSTGRES_PASSWORD`   | Database password — use a strong random value                                                |
+| `POSTGRES_DB`         | Database name                                                                                |
+| `NEXT_PUBLIC_APP_URL` | Full public URL of the app, e.g. `https://app.example.com`                                   |
+| `BETTER_AUTH_URL`     | Same as `NEXT_PUBLIC_APP_URL`                                                                |
+| `BETTER_AUTH_SECRET`  | Random 32-byte secret. Generate with: `openssl rand -base64 32`                              |
+| `GMAIL_USER`          | Gmail address used to send transactional email                                               |
+| `GMAIL_APP_PASSWORD`  | [Google App Password](https://myaccount.google.com/apppasswords) (not your account password) |
 
 The `DATABASE_URL` must use the Docker Compose service hostname (`db`) as the host:
 
@@ -53,6 +53,7 @@ docker compose up -d --build
 ```
 
 This will:
+
 1. Build the Next.js application image
 2. Start a PostgreSQL 16 database
 3. Run all Prisma migrations automatically on startup
@@ -99,6 +100,25 @@ server {
 ### 5. Complete first-run setup
 
 Visit `https://app.example.com/setup` in your browser to create the initial administrator account. This page is only accessible before any admin user exists.
+
+---
+
+## Development Seed Accounts
+
+Run `npm run db:seed` (or `docker compose exec app npm run db:seed` in production) to populate the database with test data.
+
+| Role                | Email                    | Password        |
+| ------------------- | ------------------------ | --------------- |
+| Admin               | admin@ticnexus.com       | Admin1234!      |
+| Franchise Manager   | franchise@ticnexus.com   | Manager1234!    |
+| Franchise Manager 2 | franchise2@ticnexus.com  | Manager1234!    |
+| Supervisor          | supervisor1@ticnexus.com | Supervisor1234! |
+| Supervisor 2        | supervisor2@ticnexus.com | Supervisor1234! |
+| Technician          | tech1@ticnexus.com       | Technician1234! |
+| Technician 2        | tech2@ticnexus.com       | Technician1234! |
+| Store User          | store@ticnexus.com       | StoreUser1234!  |
+
+Seed data also creates two franchises ("Franchise One" and "Franchise Two"), each with two locations, and assigns the franchise managers accordingly.
 
 ---
 

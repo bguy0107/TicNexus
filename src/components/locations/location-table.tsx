@@ -3,23 +3,43 @@
 import { useEffect, useState, useCallback } from "react"
 import { useSession } from "@/lib/auth-client"
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogTrigger,
+  DialogFooter,
 } from "@/components/ui/dialog"
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select"
 import { useToast } from "@/components/ui/use-toast"
 import { formatDate } from "@/lib/utils"
 import { Plus, MoreHorizontal } from "lucide-react"
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { EditLocationDialog } from "./edit-location-dialog"
 import type { LocationWithDetails, FranchiseWithDetails, Role } from "@/types"
 
 export function LocationTable() {
@@ -29,25 +49,28 @@ export function LocationTable() {
   const [loading, setLoading] = useState(true)
   const [createOpen, setCreateOpen] = useState(false)
   const [creating, setCreating] = useState(false)
-  const [form, setForm] = useState({ name: "", address: "", franchiseId: "" })
+  const [form, setForm] = useState({ name: "", locationNumber: "", address: "", franchiseId: "" })
+  const [editingLocation, setEditingLocation] = useState<LocationWithDetails | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const { toast } = useToast()
 
   const actorRole = (session?.user as { role?: Role })?.role
-  const canCreate = actorRole === "ADMIN" || actorRole === "FRANCHISE_MANAGER"
+  const isAdmin = actorRole === "ADMIN"
+  const canCreate = isAdmin || actorRole === "FRANCHISE_MANAGER"
 
   const fetchData = useCallback(async () => {
     setLoading(true)
-    const [locRes, franRes] = await Promise.all([
-      fetch("/api/locations"),
-      fetch("/api/franchises"),
-    ])
+    const [locRes, franRes] = await Promise.all([fetch("/api/locations"), fetch("/api/franchises")])
     const [locData, franData] = await Promise.all([locRes.json(), franRes.json()])
     setLocations(locData.locations ?? [])
     setFranchises(franData.franchises ?? [])
     setLoading(false)
   }, [])
 
-  useEffect(() => { fetchData() }, [fetchData])
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
 
   const handleCreate = async () => {
     if (!form.name.trim() || !form.franchiseId) return
@@ -61,7 +84,7 @@ export function LocationTable() {
     setCreating(false)
     if (res.ok) {
       toast({ title: "Location created" })
-      setForm({ name: "", address: "", franchiseId: "" })
+      setForm({ name: "", locationNumber: "", address: "", franchiseId: "" })
       setCreateOpen(false)
       fetchData()
     } else {
@@ -69,9 +92,12 @@ export function LocationTable() {
     }
   }
 
-  const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Delete location "${name}"?`)) return
-    const res = await fetch(`/api/locations/${id}`, { method: "DELETE" })
+  const handleDeleteConfirmed = async () => {
+    if (!confirmDelete) return
+    setDeleting(true)
+    const res = await fetch(`/api/locations/${confirmDelete.id}`, { method: "DELETE" })
+    setDeleting(false)
+    setConfirmDelete(null)
     if (res.ok) {
       toast({ title: "Location deleted" })
       fetchData()
@@ -90,11 +116,25 @@ export function LocationTable() {
         {canCreate && (
           <Dialog open={createOpen} onOpenChange={setCreateOpen}>
             <DialogTrigger asChild>
-              <Button className="gap-2"><Plus className="h-4 w-4" />Add Location</Button>
+              <Button className="gap-2">
+                <Plus className="h-4 w-4" />
+                Add Location
+              </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-sm">
-              <DialogHeader><DialogTitle>New location</DialogTitle></DialogHeader>
+              <DialogHeader>
+                <DialogTitle>New location</DialogTitle>
+              </DialogHeader>
               <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Location ID</Label>
+                  <Input
+                    value={form.locationNumber}
+                    onChange={(e) => setForm({ ...form, locationNumber: e.target.value })}
+                    placeholder="e.g. 001"
+                    className="font-mono"
+                  />
+                </div>
                 <div className="space-y-2">
                   <Label>Location name</Label>
                   <Input
@@ -119,15 +159,27 @@ export function LocationTable() {
                     </SelectTrigger>
                     <SelectContent>
                       {franchises.map((f) => (
-                        <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                        <SelectItem key={f.id} value={f.id}>
+                          {f.name}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
-                <Button onClick={handleCreate} disabled={creating || !form.name.trim() || !form.franchiseId}>
+                <Button variant="outline" onClick={() => setCreateOpen(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleCreate}
+                  disabled={
+                    creating ||
+                    !form.name.trim() ||
+                    !form.locationNumber.trim() ||
+                    !form.franchiseId
+                  }
+                >
                   {creating ? "Creating..." : "Create"}
                 </Button>
               </DialogFooter>
@@ -140,37 +192,56 @@ export function LocationTable() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>Location ID</TableHead>
               <TableHead>Name</TableHead>
               <TableHead>Franchise</TableHead>
-              <TableHead>Address</TableHead>
               <TableHead>Users</TableHead>
               <TableHead>Created</TableHead>
-              {canCreate && <TableHead className="w-12" />}
+              {isAdmin && <TableHead className="w-12" />}
             </TableRow>
           </TableHeader>
           <TableBody>
             {locations.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                <TableCell
+                  colSpan={isAdmin ? 6 : 5}
+                  className="text-center text-muted-foreground py-8"
+                >
                   No locations found
                 </TableCell>
               </TableRow>
             ) : (
               locations.map((l) => (
                 <TableRow key={l.id}>
+                  <TableCell className="text-muted-foreground text-sm font-mono">
+                    {l.locationNumber ?? "—"}
+                  </TableCell>
                   <TableCell className="font-medium">{l.name}</TableCell>
                   <TableCell className="text-muted-foreground">{l.franchise.name}</TableCell>
-                  <TableCell className="text-muted-foreground">{l.address ?? "—"}</TableCell>
                   <TableCell>{l._count.userLocations}</TableCell>
-                  <TableCell className="text-muted-foreground text-sm">{formatDate(l.createdAt)}</TableCell>
-                  {canCreate && actorRole === "ADMIN" && (
+                  <TableCell className="text-muted-foreground text-sm">
+                    {formatDate(l.createdAt)}
+                  </TableCell>
+                  {isAdmin && (
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="icon">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem className="text-destructive cursor-pointer" onClick={() => handleDelete(l.id, l.name)}>
+                          <DropdownMenuItem
+                            className="cursor-pointer"
+                            onClick={() => setEditingLocation(l)}
+                          >
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="text-destructive cursor-pointer"
+                            onClick={() => setConfirmDelete({ id: l.id, name: l.name })}
+                          >
                             Delete
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -183,6 +254,43 @@ export function LocationTable() {
           </TableBody>
         </Table>
       </div>
+
+      {editingLocation && actorRole && (
+        <EditLocationDialog
+          location={editingLocation}
+          actorRole={actorRole}
+          open={!!editingLocation}
+          onOpenChange={(open) => {
+            if (!open) setEditingLocation(null)
+          }}
+          onSuccess={fetchData}
+        />
+      )}
+
+      <Dialog
+        open={!!confirmDelete}
+        onOpenChange={(open) => {
+          if (!open) setConfirmDelete(null)
+        }}
+      >
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Delete location</DialogTitle>
+            <DialogDescription>
+              Delete <span className="font-medium text-foreground">{confirmDelete?.name}</span>?
+              This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmDelete(null)} disabled={deleting}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteConfirmed} disabled={deleting}>
+              {deleting ? "Deleting…" : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

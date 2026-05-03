@@ -17,7 +17,10 @@ export async function GET(request: NextRequest) {
   if (hasPermission(role, "location:read:all")) {
     const locations = await db.location.findMany({
       where: { deletedAt: null },
-      include: { franchise: { select: { name: true } }, _count: { select: { userLocations: true } } },
+      include: {
+        franchise: { select: { name: true } },
+        _count: { select: { userLocations: true } },
+      },
       orderBy: [{ franchise: { name: "asc" } }, { name: "asc" }],
     })
     return NextResponse.json({ locations })
@@ -29,7 +32,10 @@ export async function GET(request: NextRequest) {
       if (!uf) return NextResponse.json({ locations: [] })
       const locations = await db.location.findMany({
         where: { franchiseId: uf.franchiseId, deletedAt: null },
-        include: { franchise: { select: { name: true } }, _count: { select: { userLocations: true } } },
+        include: {
+          franchise: { select: { name: true } },
+          _count: { select: { userLocations: true } },
+        },
         orderBy: { name: "asc" },
       })
       return NextResponse.json({ locations })
@@ -39,7 +45,10 @@ export async function GET(request: NextRequest) {
     const locationIds = uls.map((ul) => ul.locationId)
     const locations = await db.location.findMany({
       where: { id: { in: locationIds }, deletedAt: null },
-      include: { franchise: { select: { name: true } }, _count: { select: { userLocations: true } } },
+      include: {
+        franchise: { select: { name: true } },
+        _count: { select: { userLocations: true } },
+      },
       orderBy: { name: "asc" },
     })
     return NextResponse.json({ locations })
@@ -50,6 +59,7 @@ export async function GET(request: NextRequest) {
 
 const createSchema = z.object({
   name: z.string().min(1),
+  locationNumber: z.string().min(1),
   address: z.string().optional(),
   franchiseId: z.string().min(1),
 })
@@ -79,6 +89,7 @@ export async function POST(request: NextRequest) {
   const location = await db.location.create({
     data: {
       name: parsed.data.name,
+      locationNumber: parsed.data.locationNumber,
       address: parsed.data.address ?? null,
       franchiseId: parsed.data.franchiseId,
       createdById: session.user.id,
@@ -90,7 +101,11 @@ export async function POST(request: NextRequest) {
     action: "CREATE",
     entityType: "location",
     entityId: location.id,
-    changes: { name: location.name, franchiseId: location.franchiseId },
+    changes: {
+      name: location.name,
+      locationNumber: location.locationNumber,
+      franchiseId: location.franchiseId,
+    },
     ipAddress: getIpFromRequest(request),
   })
 
