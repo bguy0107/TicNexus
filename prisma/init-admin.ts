@@ -1,5 +1,5 @@
-import { auth } from "@/lib/auth"
-import { db } from "@/lib/db"
+import { auth } from "../src/lib/auth"
+import { db } from "../src/lib/db"
 
 async function initAdmin() {
   const email = "admin@ticnexus.com"
