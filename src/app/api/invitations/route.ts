@@ -4,6 +4,7 @@ import { db } from "@/lib/db"
 import { sendInvitationEmail } from "@/lib/email"
 import { createAuditLog } from "@/lib/audit"
 import { canCreateRole } from "@/lib/permissions"
+import { getFranchiseMgrFranchiseIds, getFranchiseMgrLocationIds, getSupervisorLocationIds } from "@/lib/scope"
 import { getIpFromRequest } from "@/lib/utils"
 import { z } from "zod"
 import type { Role } from "@prisma/client"
@@ -20,6 +21,7 @@ export async function POST(request: NextRequest) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   const actorRole = session.user.role as Role
+  const actorId = session.user.id
 
   const body = await request.json()
   const parsed = schema.safeParse(body)
@@ -31,6 +33,28 @@ export async function POST(request: NextRequest) {
 
   if (!canCreateRole(actorRole, role as Role)) {
     return NextResponse.json({ error: "You cannot invite users with that role" }, { status: 403 })
+  }
+
+  // Scope check: FM can only invite to their own franchises/locations
+  if (actorRole === "FRANCHISE_MANAGER") {
+    const fmFranchiseIds = await getFranchiseMgrFranchiseIds(actorId)
+    if (franchiseId && !fmFranchiseIds.includes(franchiseId)) {
+      return NextResponse.json({ error: "Forbidden: franchise not in your scope" }, { status: 403 })
+    }
+    if (locationId) {
+      const fmLocationIds = await getFranchiseMgrLocationIds(actorId)
+      if (!fmLocationIds.includes(locationId)) {
+        return NextResponse.json({ error: "Forbidden: location not in your franchise" }, { status: 403 })
+      }
+    }
+  }
+
+  // Scope check: Supervisor can only invite to their assigned locations
+  if (actorRole === "SUPERVISOR" && locationId) {
+    const supervisorLocationIds = await getSupervisorLocationIds(actorId)
+    if (!supervisorLocationIds.includes(locationId)) {
+      return NextResponse.json({ error: "Forbidden: location not in your scope" }, { status: 403 })
+    }
   }
 
   const existing = await db.user.findUnique({ where: { email } })
@@ -52,7 +76,7 @@ export async function POST(request: NextRequest) {
       role: role as Role,
       franchiseId: franchiseId ?? null,
       locationId: locationId ?? null,
-      invitedById: session.user.id,
+      invitedById: actorId,
       expiresAt,
     },
   })
@@ -63,7 +87,7 @@ export async function POST(request: NextRequest) {
   await sendInvitationEmail({ to: email, inviterName, role, inviteUrl })
 
   await createAuditLog({
-    actorId: session.user.id,
+    actorId,
     action: "INVITE_SENT",
     entityType: "invitation",
     entityId: invitation.id,

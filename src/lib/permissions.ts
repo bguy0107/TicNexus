@@ -21,8 +21,14 @@ type Permission =
   | "user:read:location"
   | "user:update:any"
   | "user:update:below"
+  | "user:update:role"
+  | "user:update:assignments"
   | "user:deactivate:any"
   | "user:deactivate:below"
+  | "user:reactivate:any"
+  | "user:reactivate:below"
+  | "user:reset-password:any"
+  | "user:reset-password:below"
   | "technician:assign"
 
 const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
@@ -44,7 +50,11 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "user:create:STORE_USER",
     "user:read:all",
     "user:update:any",
+    "user:update:role",
+    "user:update:assignments",
     "user:deactivate:any",
+    "user:reactivate:any",
+    "user:reset-password:any",
     "technician:assign",
   ],
   FRANCHISE_MANAGER: [
@@ -57,7 +67,11 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "user:create:STORE_USER",
     "user:read:franchise",
     "user:update:below",
+    "user:update:role",
+    "user:update:assignments",
     "user:deactivate:below",
+    "user:reactivate:below",
+    "user:reset-password:below",
     "technician:assign",
   ],
   SUPERVISOR: [
@@ -65,14 +79,20 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "location:read:own",
     "user:create:STORE_USER",
     "user:read:location",
+    "user:update:below",
+    "user:update:assignments",
     "user:deactivate:below",
+    "user:reactivate:below",
+    "user:reset-password:below",
   ],
   TECHNICIAN: [
     "franchise:read:own",
     "location:read:own",
+    "user:read:location",
   ],
   STORE_USER: [
     "location:read:own",
+    "user:read:location",
   ],
 }
 

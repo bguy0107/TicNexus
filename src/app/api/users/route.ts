@@ -10,10 +10,6 @@ export async function GET(request: NextRequest) {
   const role = session.user.role as Role
   const userId = session.user.id
 
-  if (role === "STORE_USER" || role === "TECHNICIAN") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
-  }
-
   const baseWhere: Prisma.UserWhereInput = { deletedAt: null }
 
   if (role === "ADMIN") {
@@ -26,18 +22,19 @@ export async function GET(request: NextRequest) {
   }
 
   if (role === "FRANCHISE_MANAGER") {
-    const uf = await db.userFranchise.findFirst({ where: { userId } })
-    if (!uf) return NextResponse.json({ users: [] })
+    const ufs = await db.userFranchise.findMany({ where: { userId } })
+    if (ufs.length === 0) return NextResponse.json({ users: [] })
 
+    const franchiseIds = ufs.map((uf) => uf.franchiseId)
     const locationIds = (
-      await db.location.findMany({ where: { franchiseId: uf.franchiseId }, select: { id: true } })
+      await db.location.findMany({ where: { franchiseId: { in: franchiseIds } }, select: { id: true } })
     ).map((l) => l.id)
 
     const users = await db.user.findMany({
       where: {
         ...baseWhere,
         OR: [
-          { userFranchises: { some: { franchiseId: uf.franchiseId } } },
+          { userFranchises: { some: { franchiseId: { in: franchiseIds } } } },
           { userLocations: { some: { locationId: { in: locationIds } } } },
         ],
       },
@@ -47,14 +44,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ users })
   }
 
-  if (role === "SUPERVISOR") {
+  if (role === "SUPERVISOR" || role === "TECHNICIAN" || role === "STORE_USER") {
     const uls = await db.userLocation.findMany({ where: { userId } })
     const locationIds = uls.map((ul) => ul.locationId)
+    if (locationIds.length === 0) return NextResponse.json({ users: [] })
 
     const users = await db.user.findMany({
       where: {
         ...baseWhere,
-        role: "STORE_USER",
         userLocations: { some: { locationId: { in: locationIds } } },
       },
       select: userSelect,

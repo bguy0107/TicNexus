@@ -25,6 +25,7 @@ enum AuditAction {
   INVITE_ACCEPTED
   DEACTIVATE
   REACTIVATE
+  PASSWORD_RESET
 }
 
 // ── better-auth required tables ─────────────────────────────────────────────
