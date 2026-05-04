@@ -1,6 +1,7 @@
 "use client"
 
-import { LogOut } from "lucide-react"
+import { useState } from "react"
+import { LogOut, Menu } from "lucide-react"
 import { signOut } from "@/lib/auth-client"
 import { useRouter } from "next/navigation"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -12,8 +13,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { getInitials } from "@/lib/utils"
 import { getRoleLabel } from "@/lib/permissions"
+import { NavLinks } from "./nav-links"
 import type { Role } from "@prisma/client"
 
 interface HeaderProps {
@@ -25,6 +28,7 @@ interface HeaderProps {
 
 export function Header({ firstName, lastName, email, role }: HeaderProps) {
   const router = useRouter()
+  const [open, setOpen] = useState(false)
 
   const handleSignOut = async () => {
     await signOut({ fetchOptions: { onSuccess: () => router.push("/login") } })
@@ -33,6 +37,24 @@ export function Header({ firstName, lastName, email, role }: HeaderProps) {
   return (
     <header className="bg-background border-b h-16 flex items-center justify-between px-6 md:pl-6">
       <div className="flex items-center gap-2 md:hidden">
+        <Sheet open={open} onOpenChange={setOpen}>
+          <SheetTrigger asChild>
+            <button
+              className="p-2 rounded-md hover:bg-accent transition-colors"
+              aria-label="Open navigation menu"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-64 p-0 bg-[#0a0a0a] border-r border-border">
+            <SheetHeader className="h-16 flex justify-center px-6 border-b border-border">
+              <SheetTitle className="text-foreground font-bold text-xl tracking-tight text-left">
+                TicNexus
+              </SheetTitle>
+            </SheetHeader>
+            <NavLinks userRole={role} onNavigate={() => setOpen(false)} />
+          </SheetContent>
+        </Sheet>
         <span className="font-bold text-lg text-foreground">TicNexus</span>
       </div>
       <div className="flex-1" />
