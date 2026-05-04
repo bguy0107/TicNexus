@@ -35,6 +35,12 @@ npm run db:seed              # Seed the DB with test users, franchises, and loca
 
 **First-run setup:** The admin account (`admin@ticnexus.com` / `Admin1234!`) is created automatically by `prisma/init-admin.ts` on every container startup. No manual setup step is required.
 
+**Production deployment (Docker Compose):** Copy `.env.example` to `.env` and set every value before running `docker compose up -d`. Critical checklist:
+
+- `DATABASE_URL` — host must be `db` (the Compose service name), not `localhost`.
+- `BETTER_AUTH_URL` and `NEXT_PUBLIC_APP_URL` — must exactly match the origin the browser uses, **including the port** when not behind a reverse proxy on port 80/443. For example, if the app is accessed at `http://192.168.1.10:3000`, both variables must be `http://192.168.1.10:3000`. A port mismatch causes Better-Auth to reject all sign-in attempts with "Invalid email or password".
+- `BETTER_AUTH_SECRET` — must be a real secret (run `openssl rand -base64 32`), not the placeholder string.
+
 ---
 
 ## Pre-Commit Checklist
