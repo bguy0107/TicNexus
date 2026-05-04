@@ -35,6 +35,7 @@ export const auth = betterAuth({
       role: { type: "string", required: true, defaultValue: "STORE_USER" },
       deletedAt: { type: "date", required: false },
       createdById: { type: "string", required: false },
+      mustChangePassword: { type: "boolean", required: false, defaultValue: false },
     },
   },
   advanced: {

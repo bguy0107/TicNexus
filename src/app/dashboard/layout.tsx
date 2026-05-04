@@ -1,10 +1,16 @@
 import { requireAuth } from "@/lib/session"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
+import { redirect } from "next/navigation"
 import type { Role } from "@prisma/client"
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await requireAuth()
+
+  if (session.user.mustChangePassword) {
+    redirect("/change-password")
+  }
+
   const { firstName, lastName, email, role } = session.user as {
     firstName: string
     lastName: string

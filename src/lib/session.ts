@@ -11,6 +11,7 @@ type FullUser = typeof auth.$Infer.Session.user & {
   lastName: string
   deletedAt?: Date | null
   createdById?: string | null
+  mustChangePassword?: boolean
 }
 
 export type FullSession = {

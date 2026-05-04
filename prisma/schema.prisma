@@ -49,8 +49,9 @@ model User {
   lastName      String     @default("")
   role          Role       @default(STORE_USER)
   department    Department?
-  deletedAt     DateTime?
-  createdById   String?
+  deletedAt           DateTime?
+  createdById         String?
+  mustChangePassword  Boolean   @default(false)
 
   // Relations
   sessions         Session[]

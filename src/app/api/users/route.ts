@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getApiSession } from "@/lib/session"
 import { db } from "@/lib/db"
+import { auth } from "@/lib/auth"
+import { createAuditLog } from "@/lib/audit"
+import { getIpFromRequest } from "@/lib/utils"
 import type { Role, Prisma } from "@prisma/client"
 
 export async function GET(request: NextRequest) {
@@ -85,3 +88,65 @@ const userSelect = {
     },
   },
 } as const
+
+export async function POST(request: NextRequest) {
+  const session = await getApiSession(request.headers)
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  if (session.user.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+
+  const body = await request.json()
+  const { email, firstName, lastName, role, password } = body as {
+    email?: string
+    firstName?: string
+    lastName?: string
+    role?: string
+    password?: string
+  }
+
+  if (!email || !firstName || !lastName || !role || !password) {
+    return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+  }
+  if (password.length < 8) {
+    return NextResponse.json({ error: "Password must be at least 8 characters" }, { status: 400 })
+  }
+
+  const existing = await db.user.findUnique({ where: { email: email.toLowerCase() } })
+  if (existing) return NextResponse.json({ error: "A user with that email already exists" }, { status: 409 })
+
+  const result = await auth.api.signUpEmail({
+    body: {
+      email: email.toLowerCase(),
+      password,
+      name: `${firstName} ${lastName}`,
+      firstName,
+      lastName,
+    },
+  })
+
+  if (!result?.user) {
+    return NextResponse.json({ error: "Failed to create user" }, { status: 500 })
+  }
+
+  await db.user.update({
+    where: { id: result.user.id },
+    data: {
+      role: role as Role,
+      emailVerified: true,
+      firstName,
+      lastName,
+      mustChangePassword: true,
+      createdById: session.user.id,
+    },
+  })
+
+  await createAuditLog({
+    actorId: session.user.id,
+    action: "CREATE",
+    entityType: "user",
+    entityId: result.user.id,
+    changes: { email, firstName, lastName, role },
+    ipAddress: getIpFromRequest(request),
+  })
+
+  return NextResponse.json({ user: result.user }, { status: 201 })
+}

@@ -2,6 +2,7 @@ import { requireAuth } from "@/lib/session"
 import { db } from "@/lib/db"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Users, Building2, MapPin } from "lucide-react"
+import { QuickActions } from "@/components/dashboard/quick-actions"
 import type { Role } from "@prisma/client"
 
 export default async function DashboardPage() {
@@ -68,6 +69,7 @@ export default async function DashboardPage() {
           )
         })}
       </div>
+      {role === "ADMIN" && <QuickActions />}
     </div>
   )
 }

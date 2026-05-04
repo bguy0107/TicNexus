@@ -23,6 +23,7 @@ import {
 import { UserRoleBadge } from "./user-role-badge"
 import { InviteUserDialog } from "./invite-user-dialog"
 import { EditUserDialog } from "./edit-user-dialog"
+import { ChangePasswordDialog } from "./change-password-dialog"
 import { useToast } from "@/components/ui/use-toast"
 import { formatDate } from "@/lib/utils"
 import { MoreHorizontal } from "lucide-react"
@@ -41,6 +42,7 @@ export function UserTable() {
   const [users, setUsers] = useState<UserWithRelations[]>([])
   const [loading, setLoading] = useState(true)
   const [editingUser, setEditingUser] = useState<UserWithRelations | null>(null)
+  const [changingPasswordUser, setChangingPasswordUser] = useState<{ id: string; name: string } | null>(null)
   const [confirmDeactivate, setConfirmDeactivate] = useState<{ id: string; name: string } | null>(
     null
   )
@@ -173,6 +175,19 @@ export function UserTable() {
                                 >
                                   Edit
                                 </DropdownMenuItem>
+                                {isAdmin && (
+                                  <DropdownMenuItem
+                                    className="cursor-pointer"
+                                    onClick={() =>
+                                      setChangingPasswordUser({
+                                        id: user.id,
+                                        name: `${user.firstName} ${user.lastName}`,
+                                      })
+                                    }
+                                  >
+                                    Change Password
+                                  </DropdownMenuItem>
+                                )}
                                 <DropdownMenuSeparator />
                               </>
                             )}
@@ -220,6 +235,17 @@ export function UserTable() {
             if (!open) setEditingUser(null)
           }}
           onSuccess={fetchUsers}
+        />
+      )}
+
+      {changingPasswordUser && (
+        <ChangePasswordDialog
+          userId={changingPasswordUser.id}
+          userName={changingPasswordUser.name}
+          open={!!changingPasswordUser}
+          onOpenChange={(open) => {
+            if (!open) setChangingPasswordUser(null)
+          }}
         />
       )}
 
