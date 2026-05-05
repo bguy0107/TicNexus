@@ -10,6 +10,7 @@ const users = [
     email: "admin@ticnexus.com",
     password: "Admin1234!",
     role: "ADMIN" as const,
+    department: null,
   },
   {
     firstName: "Franchise",
@@ -17,6 +18,7 @@ const users = [
     email: "franchise@ticnexus.com",
     password: "Manager1234!",
     role: "FRANCHISE_MANAGER" as const,
+    department: null,
   },
   {
     firstName: "Franchise",
@@ -24,6 +26,7 @@ const users = [
     email: "franchise2@ticnexus.com",
     password: "Manager1234!",
     role: "FRANCHISE_MANAGER" as const,
+    department: null,
   },
   {
     firstName: "Store",
@@ -31,6 +34,7 @@ const users = [
     email: "store@ticnexus.com",
     password: "StoreUser1234!",
     role: "STORE_USER" as const,
+    department: null,
   },
   {
     firstName: "Supervisor",
@@ -38,6 +42,7 @@ const users = [
     email: "supervisor1@ticnexus.com",
     password: "Supervisor1234!",
     role: "SUPERVISOR" as const,
+    department: null,
   },
   {
     firstName: "Supervisor",
@@ -45,6 +50,7 @@ const users = [
     email: "supervisor2@ticnexus.com",
     password: "Supervisor1234!",
     role: "SUPERVISOR" as const,
+    department: null,
   },
   {
     firstName: "Technician",
@@ -52,6 +58,7 @@ const users = [
     email: "tech1@ticnexus.com",
     password: "Technician1234!",
     role: "TECHNICIAN" as const,
+    department: "IT" as const,
   },
   {
     firstName: "Technician",
@@ -59,6 +66,7 @@ const users = [
     email: "tech2@ticnexus.com",
     password: "Technician1234!",
     role: "TECHNICIAN" as const,
+    department: "MAINTENANCE" as const,
   },
 ]
 
@@ -81,6 +89,21 @@ const franchiseData = [
   },
 ]
 
+// Location assignments for non-FM roles.
+// supervisor1 covers all of Franchise One; supervisor2 covers Location 2A.
+// tech1 (IT) covers Franchise One; tech2 (Maintenance) covers Franchise Two.
+// store user is at Location 1B.
+const locationAssignments: { email: string; locationName: string }[] = [
+  { email: "supervisor1@ticnexus.com", locationName: "Location 1A" },
+  { email: "supervisor1@ticnexus.com", locationName: "Location 1B" },
+  { email: "supervisor2@ticnexus.com", locationName: "Location 2A" },
+  { email: "tech1@ticnexus.com", locationName: "Location 1A" },
+  { email: "tech1@ticnexus.com", locationName: "Location 1B" },
+  { email: "tech2@ticnexus.com", locationName: "Location 2A" },
+  { email: "tech2@ticnexus.com", locationName: "Location 2B" },
+  { email: "store@ticnexus.com", locationName: "Location 1B" },
+]
+
 async function seed() {
   console.log("Seeding database...")
 
@@ -88,7 +111,13 @@ async function seed() {
   for (const u of users) {
     const existing = await db.user.findUnique({ where: { email: u.email } })
     if (existing) {
-      console.log(`  skip  ${u.email} (already exists)`)
+      // Update department if it changed (e.g. technicians added after initial seed)
+      if (u.department !== undefined && existing.department !== u.department) {
+        await db.user.update({ where: { id: existing.id }, data: { department: u.department } })
+        console.log(`  updated department   ${u.email} → ${u.department}`)
+      } else {
+        console.log(`  skip  ${u.email} (already exists)`)
+      }
       continue
     }
 
@@ -105,6 +134,7 @@ async function seed() {
         firstName: u.firstName,
         lastName: u.lastName,
         role: u.role,
+        department: u.department,
         createdAt: now,
         updatedAt: now,
       },
@@ -162,6 +192,32 @@ async function seed() {
       } else {
         console.log(`  skip  FM assignment  ${fd.managerEmail} → ${fd.name} (already assigned)`)
       }
+    }
+  }
+
+  // ── Location assignments (supervisors, technicians, store users) ──────────
+  console.log("\nSeeding location assignments...")
+
+  for (const la of locationAssignments) {
+    const user = await db.user.findUnique({ where: { email: la.email } })
+    const location = await db.location.findFirst({
+      where: { name: la.locationName, deletedAt: null },
+    })
+
+    if (!user || !location) {
+      console.log(`  skip  assignment     ${la.email} → ${la.locationName} (user or location not found)`)
+      continue
+    }
+
+    const alreadyAssigned = await db.userLocation.findUnique({
+      where: { userId_locationId: { userId: user.id, locationId: location.id } },
+    })
+
+    if (!alreadyAssigned) {
+      await db.userLocation.create({ data: { userId: user.id, locationId: location.id } })
+      console.log(`  assigned             ${la.email} → ${la.locationName}`)
+    } else {
+      console.log(`  skip  assignment     ${la.email} → ${la.locationName} (already assigned)`)
     }
   }
 

@@ -10,31 +10,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog"
 import { UserRoleBadge } from "./user-role-badge"
 import { InviteUserDialog } from "./invite-user-dialog"
 import { EditUserDialog } from "./edit-user-dialog"
-import { ChangePasswordDialog } from "./change-password-dialog"
-import { useToast } from "@/components/ui/use-toast"
-import { formatDate } from "@/lib/utils"
-import { MoreHorizontal } from "lucide-react"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { isHigherRole } from "@/lib/permissions"
+import { formatDate, cn } from "@/lib/utils"
+import { isHigherRole, hasPermission } from "@/lib/permissions"
 import type { UserWithRelations, Role } from "@/types"
 
 export function UserTable() {
@@ -42,12 +23,7 @@ export function UserTable() {
   const [users, setUsers] = useState<UserWithRelations[]>([])
   const [loading, setLoading] = useState(true)
   const [editingUser, setEditingUser] = useState<UserWithRelations | null>(null)
-  const [changingPasswordUser, setChangingPasswordUser] = useState<{ id: string; name: string } | null>(null)
-  const [confirmDeactivate, setConfirmDeactivate] = useState<{ id: string; name: string } | null>(
-    null
-  )
-  const [deactivating, setDeactivating] = useState(false)
-  const { toast } = useToast()
+  const [editReadOnly, setEditReadOnly] = useState(false)
 
   const fetchUsers = useCallback(async () => {
     setLoading(true)
@@ -61,37 +37,7 @@ export function UserTable() {
     fetchUsers()
   }, [fetchUsers])
 
-  const handleDeactivateConfirmed = async () => {
-    if (!confirmDeactivate) return
-    setDeactivating(true)
-    const res = await fetch(`/api/users/${confirmDeactivate.id}`, { method: "DELETE" })
-    setDeactivating(false)
-    setConfirmDeactivate(null)
-    if (res.ok) {
-      toast({
-        title: "User deactivated",
-        description: `${confirmDeactivate.name} has been deactivated.`,
-      })
-      fetchUsers()
-    } else {
-      const data = await res.json()
-      toast({ title: "Error", description: data.error, variant: "destructive" })
-    }
-  }
-
-  const handleReactivate = async (userId: string, userName: string) => {
-    const res = await fetch(`/api/users/${userId}/reactivate`, { method: "POST" })
-    if (res.ok) {
-      toast({ title: "User reactivated", description: `${userName} has been reactivated.` })
-      fetchUsers()
-    } else {
-      const data = await res.json()
-      toast({ title: "Error", description: data.error, variant: "destructive" })
-    }
-  }
-
   const actorRole = (session?.user as { role?: Role })?.role ?? "STORE_USER"
-  const isAdmin = actorRole === "ADMIN"
 
   if (loading) {
     return <div className="text-muted-foreground text-sm">Loading users…</div>
@@ -113,23 +59,30 @@ export function UserTable() {
               <TableHead>Role</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Joined</TableHead>
-              <TableHead className="w-12" />
             </TableRow>
           </TableHeader>
           <TableBody>
             {users.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                   No users found
                 </TableCell>
               </TableRow>
             ) : (
               users.map((user) => {
                 const isSelf = user.id === session?.user?.id
-                const showMenu = !isSelf && (isAdmin || !user.deletedAt)
+                const canEdit =
+                  !isSelf &&
+                  isHigherRole(actorRole, user.role) &&
+                  (hasPermission(actorRole, "user:update:any") ||
+                    hasPermission(actorRole, "user:update:below"))
 
                 return (
-                  <TableRow key={user.id} className={user.deletedAt ? "opacity-50" : undefined}>
+                  <TableRow
+                    key={user.id}
+                    className={cn(user.deletedAt && "opacity-50", "cursor-pointer")}
+                    onClick={() => { setEditingUser(user); setEditReadOnly(!canEdit) }}
+                  >
                     <TableCell className="font-medium">
                       {user.firstName} {user.lastName}
                     </TableCell>
@@ -158,67 +111,6 @@ export function UserTable() {
                     <TableCell className="text-muted-foreground text-sm">
                       {formatDate(user.createdAt)}
                     </TableCell>
-                    <TableCell>
-                      {showMenu && (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            {isHigherRole(actorRole, user.role) && (
-                              <>
-                                <DropdownMenuItem
-                                  className="cursor-pointer"
-                                  onClick={() => setEditingUser(user)}
-                                >
-                                  Edit
-                                </DropdownMenuItem>
-                                {isAdmin && (
-                                  <DropdownMenuItem
-                                    className="cursor-pointer"
-                                    onClick={() =>
-                                      setChangingPasswordUser({
-                                        id: user.id,
-                                        name: `${user.firstName} ${user.lastName}`,
-                                      })
-                                    }
-                                  >
-                                    Change Password
-                                  </DropdownMenuItem>
-                                )}
-                                <DropdownMenuSeparator />
-                              </>
-                            )}
-                            {!user.deletedAt ? (
-                              <DropdownMenuItem
-                                className="text-destructive cursor-pointer"
-                                onClick={() =>
-                                  setConfirmDeactivate({
-                                    id: user.id,
-                                    name: `${user.firstName} ${user.lastName}`,
-                                  })
-                                }
-                              >
-                                Deactivate
-                              </DropdownMenuItem>
-                            ) : (
-                              isAdmin && (
-                                <DropdownMenuItem
-                                  className="cursor-pointer"
-                                  onClick={() =>
-                                    handleReactivate(user.id, `${user.firstName} ${user.lastName}`)
-                                  }
-                                >
-                                  Reactivate
-                                </DropdownMenuItem>
-                              )
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      )}
-                    </TableCell>
                   </TableRow>
                 )
               })
@@ -235,53 +127,9 @@ export function UserTable() {
             if (!open) setEditingUser(null)
           }}
           onSuccess={fetchUsers}
+          readOnly={editReadOnly}
         />
       )}
-
-      {changingPasswordUser && (
-        <ChangePasswordDialog
-          userId={changingPasswordUser.id}
-          userName={changingPasswordUser.name}
-          open={!!changingPasswordUser}
-          onOpenChange={(open) => {
-            if (!open) setChangingPasswordUser(null)
-          }}
-        />
-      )}
-
-      <Dialog
-        open={!!confirmDeactivate}
-        onOpenChange={(open) => {
-          if (!open) setConfirmDeactivate(null)
-        }}
-      >
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Deactivate user</DialogTitle>
-            <DialogDescription>
-              Deactivate{" "}
-              <span className="font-medium text-foreground">{confirmDeactivate?.name}</span>? They
-              will lose access immediately.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setConfirmDeactivate(null)}
-              disabled={deactivating}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDeactivateConfirmed}
-              disabled={deactivating}
-            >
-              {deactivating ? "Deactivating…" : "Deactivate"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }
