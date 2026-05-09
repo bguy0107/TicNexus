@@ -28,10 +28,14 @@ export async function GET(request: NextRequest) {
 
   if (hasPermission(role, "location:read:own")) {
     if (role === "FRANCHISE_MANAGER") {
-      const uf = await db.userFranchise.findFirst({ where: { userId } })
-      if (!uf) return NextResponse.json({ locations: [] })
+      // [H1] Use findMany so a FM assigned to multiple franchises sees all locations
+      const ufs = await db.userFranchise.findMany({
+        where: { userId },
+        select: { franchiseId: true },
+      })
+      if (ufs.length === 0) return NextResponse.json({ locations: [] })
       const locations = await db.location.findMany({
-        where: { franchiseId: uf.franchiseId, deletedAt: null },
+        where: { franchiseId: { in: ufs.map((u) => u.franchiseId) }, deletedAt: null },
         include: {
           franchise: { select: { name: true } },
           _count: { select: { userLocations: true } },

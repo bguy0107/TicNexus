@@ -24,11 +24,14 @@ export async function isTargetInFranchiseMgrScope(
   actorId: string,
   targetUserId: string
 ): Promise<boolean> {
-  const [franchiseIds, locationIds] = await Promise.all([
-    getFranchiseMgrFranchiseIds(actorId),
-    getFranchiseMgrLocationIds(actorId),
-  ])
+  const franchiseIds = await getFranchiseMgrFranchiseIds(actorId)
   if (franchiseIds.length === 0) return false
+
+  const locationRows = await db.location.findMany({
+    where: { franchiseId: { in: franchiseIds } },
+    select: { id: true },
+  })
+  const locationIds = locationRows.map((r) => r.id)
 
   const target = await db.user.findUnique({
     where: { id: targetUserId },

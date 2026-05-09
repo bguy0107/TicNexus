@@ -89,50 +89,70 @@ export async function POST(
 
   const { firstName, lastName, password } = parsed.data
 
-  const signUpResponse = await auth.api.signUpEmail({
-    body: {
-      email: invitation.email,
-      password,
-      name: `${firstName} ${lastName}`,
-      firstName,
-      lastName,
-    },
-  })
-
-  if (!signUpResponse?.user) {
-    return NextResponse.json({ error: "Failed to create account" }, { status: 500 })
-  }
-
-  const userId = signUpResponse.user.id
-
-  await db.user.update({
-    where: { id: userId },
-    data: {
-      firstName,
-      lastName,
-      role: invitation.role,
-      department: invitation.department ?? null,
-      emailVerified: true,
-      createdById: invitation.invitedById,
-    },
-  })
-
-  if (invitation.franchiseId && ["FRANCHISE_MANAGER"].includes(invitation.role)) {
-    await db.userFranchise.create({
-      data: { userId, franchiseId: invitation.franchiseId, assignedById: invitation.invitedById },
+  // [H4] signUpEmail throws on duplicate email; return 409
+  let userId: string
+  try {
+    const signUpResponse = await auth.api.signUpEmail({
+      body: {
+        email: invitation.email,
+        password,
+        name: `${firstName} ${lastName}`,
+        firstName,
+        lastName,
+      },
     })
+    if (!signUpResponse?.user) {
+      return NextResponse.json({ error: "Failed to create account" }, { status: 500 })
+    }
+    userId = signUpResponse.user.id
+  } catch {
+    return NextResponse.json(
+      { error: "An account with that email already exists" },
+      { status: 409 }
+    )
   }
 
-  if (invitation.locationId) {
-    await db.userLocation.create({
-      data: { userId, locationId: invitation.locationId, assignedById: invitation.invitedById },
+  // [H4] Wrap all post-signup writes in a transaction; compensate on failure
+  try {
+    await db.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: userId },
+        data: {
+          firstName,
+          lastName,
+          role: invitation.role,
+          department: invitation.department ?? null,
+          emailVerified: true,
+          createdById: invitation.invitedById,
+        },
+      })
+
+      if (invitation.franchiseId && invitation.role === "FRANCHISE_MANAGER") {
+        await tx.userFranchise.create({
+          data: {
+            userId,
+            franchiseId: invitation.franchiseId,
+            assignedById: invitation.invitedById,
+          },
+        })
+      }
+
+      if (invitation.locationId) {
+        await tx.userLocation.create({
+          data: {
+            userId,
+            locationId: invitation.locationId,
+            assignedById: invitation.invitedById,
+          },
+        })
+      }
+
+      await tx.invitation.update({ where: { token }, data: { acceptedAt: new Date() } })
     })
+  } catch {
+    await db.user.delete({ where: { id: userId } }).catch(() => null)
+    return NextResponse.json({ error: "Failed to complete account setup" }, { status: 500 })
   }
-
-  await db.invitation.update({
-    where: { token },
-    data: { acceptedAt: new Date() },
-  })
 
   await createAuditLog({
     actorId: userId,

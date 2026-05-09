@@ -5,7 +5,12 @@ import { createAuditLog } from "@/lib/audit"
 import { isHigherRole } from "@/lib/permissions"
 import { getIpFromRequest } from "@/lib/utils"
 import { hashPassword } from "@better-auth/utils/password"
+import { z } from "zod"
 import type { Role } from "@prisma/client"
+
+const schema = z.object({
+  password: z.string().min(8, "Password must be at least 8 characters"),
+})
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getApiSession(request.headers)
@@ -26,13 +31,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
 
   const body = await request.json()
-  const { password } = body as { password?: string }
-
-  if (!password || password.length < 8) {
-    return NextResponse.json({ error: "Password must be at least 8 characters" }, { status: 400 })
+  const parsed = schema.safeParse(body)
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
   }
 
-  const hashed = await hashPassword(password)
+  const hashed = await hashPassword(parsed.data.password)
 
   await db.account.updateMany({
     where: { userId: id, providerId: "credential" },

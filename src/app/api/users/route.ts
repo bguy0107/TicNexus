@@ -3,7 +3,9 @@ import { getApiSession } from "@/lib/session"
 import { db } from "@/lib/db"
 import { auth } from "@/lib/auth"
 import { createAuditLog } from "@/lib/audit"
+import { hasPermission } from "@/lib/permissions"
 import { getIpFromRequest } from "@/lib/utils"
+import { z } from "zod"
 import type { Role, Department, Prisma } from "@prisma/client"
 
 export async function GET(request: NextRequest) {
@@ -18,7 +20,8 @@ export async function GET(request: NextRequest) {
     ? { deletedAt: { not: null } }
     : { deletedAt: null }
 
-  if (role === "ADMIN") {
+  // [M6] Use hasPermission instead of inline role comparisons
+  if (hasPermission(role, "user:read:all")) {
     const users = await db.user.findMany({
       where: baseWhere,
       select: userSelect,
@@ -27,7 +30,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ users })
   }
 
-  if (role === "FRANCHISE_MANAGER") {
+  if (hasPermission(role, "user:read:franchise")) {
     const ufs = await db.userFranchise.findMany({ where: { userId } })
     if (ufs.length === 0) return NextResponse.json({ users: [] })
 
@@ -53,7 +56,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ users })
   }
 
-  if (role === "SUPERVISOR" || role === "TECHNICIAN" || role === "STORE_USER") {
+  if (hasPermission(role, "user:read:location")) {
     const uls = await db.userLocation.findMany({ where: { userId } })
     const locationIds = uls.map((ul) => ul.locationId)
     if (locationIds.length === 0) return NextResponse.json({ users: [] })
@@ -92,6 +95,18 @@ const userSelect = {
   },
 } as const
 
+// [L2] Zod schema for direct user creation
+const createUserSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  role: z.enum(["ADMIN", "FRANCHISE_MANAGER", "SUPERVISOR", "TECHNICIAN", "STORE_USER"]),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  department: z.enum(["IT", "MAINTENANCE"]).optional(),
+  franchiseId: z.string().optional(),
+  locationId: z.string().optional(),
+})
+
 export async function POST(request: NextRequest) {
   const session = await getApiSession(request.headers)
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -99,70 +114,67 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
 
   const body = await request.json()
+  const parsed = createUserSchema.safeParse(body)
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
+  }
+
   const { email, firstName, lastName, role, password, department, franchiseId, locationId } =
-    body as {
-      email?: string
-      firstName?: string
-      lastName?: string
-      role?: string
-      password?: string
-      department?: string
-      franchiseId?: string
-      locationId?: string
+    parsed.data
+
+  // [H4] signUpEmail can throw on duplicate email; catch and return 409
+  let userId: string
+  try {
+    // [M5] Remove pre-flight findUnique check (TOCTOU race); rely on signUpEmail uniqueness enforcement
+    const result = await auth.api.signUpEmail({
+      body: {
+        email: email.toLowerCase(),
+        password,
+        name: `${firstName} ${lastName}`,
+        firstName,
+        lastName,
+      },
+    })
+    if (!result?.user) {
+      return NextResponse.json({ error: "Failed to create user" }, { status: 500 })
     }
-
-  if (!email || !firstName || !lastName || !role || !password) {
-    return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
-  }
-  if (password.length < 8) {
-    return NextResponse.json({ error: "Password must be at least 8 characters" }, { status: 400 })
-  }
-
-  const existing = await db.user.findUnique({ where: { email: email.toLowerCase() } })
-  if (existing)
+    userId = result.user.id
+  } catch {
     return NextResponse.json({ error: "A user with that email already exists" }, { status: 409 })
-
-  const result = await auth.api.signUpEmail({
-    body: {
-      email: email.toLowerCase(),
-      password,
-      name: `${firstName} ${lastName}`,
-      firstName,
-      lastName,
-    },
-  })
-
-  if (!result?.user) {
-    return NextResponse.json({ error: "Failed to create user" }, { status: 500 })
   }
 
   const actorId = session.user.id
-  const userId = result.user.id
 
-  await db.$transaction(async (tx) => {
-    await tx.user.update({
-      where: { id: userId },
-      data: {
-        role: role as Role,
-        department: department ? (department as Department) : undefined,
-        emailVerified: true,
-        firstName,
-        lastName,
-        mustChangePassword: true,
-        createdById: actorId,
-      },
+  try {
+    await db.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: userId },
+        data: {
+          role: role as Role,
+          department: department ? (department as Department) : undefined,
+          emailVerified: true,
+          firstName,
+          lastName,
+          mustChangePassword: true,
+          createdById: actorId,
+        },
+      })
+      if (franchiseId) {
+        await tx.userFranchise.create({
+          data: { userId, franchiseId, assignedById: actorId },
+        })
+      }
+      if (locationId) {
+        await tx.userLocation.create({
+          data: { userId, locationId, assignedById: actorId },
+        })
+      }
     })
-    if (franchiseId) {
-      await tx.userFranchise.create({
-        data: { userId, franchiseId, assignedById: actorId },
-      })
-    }
-    if (locationId) {
-      await tx.userLocation.create({
-        data: { userId, locationId, assignedById: actorId },
-      })
-    }
-  })
+  } catch {
+    // [H4] Compensate: remove the Better-Auth user to avoid orphaned records
+    await db.user.delete({ where: { id: userId } }).catch(() => null)
+    return NextResponse.json({ error: "Failed to create user" }, { status: 500 })
+  }
 
   await createAuditLog({
     actorId,
@@ -181,5 +193,5 @@ export async function POST(request: NextRequest) {
     ipAddress: getIpFromRequest(request),
   })
 
-  return NextResponse.json({ user: result.user }, { status: 201 })
+  return NextResponse.json({ userId }, { status: 201 })
 }

@@ -25,7 +25,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const target = await db.user.findUnique({ where: { id, deletedAt: null } })
   if (!target) return NextResponse.json({ error: "Not found" }, { status: 404 })
 
-  if (!isHigherRole(actorRole, target.role as Role)) {
+  // [L1] ADMIN can force-flag any user; non-admins must outrank the target
+  if (actorRole !== "ADMIN" && !isHigherRole(actorRole, target.role as Role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 

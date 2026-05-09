@@ -1,5 +1,14 @@
 import nodemailer from "nodemailer"
 
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#x27;")
+}
+
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -20,6 +29,7 @@ export async function sendInvitationEmail({
   inviteUrl: string
 }) {
   const roleLabel = role.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+  const safeInviterName = escapeHtml(inviterName)
 
   await transporter.sendMail({
     from: `TicNexus <${process.env.GMAIL_USER}>`,
@@ -28,7 +38,7 @@ export async function sendInvitationEmail({
     html: `
       <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:24px;">
         <h2 style="color:#0f172a;">Welcome to TicNexus</h2>
-        <p>${inviterName} has invited you to join TicNexus as a <strong>${roleLabel}</strong>.</p>
+        <p>${safeInviterName} has invited you to join TicNexus as a <strong>${roleLabel}</strong>.</p>
         <p>Click the button below to accept your invitation and set your password:</p>
         <a href="${inviteUrl}"
            style="display:inline-block;padding:12px 24px;background:#0f172a;color:#fff;

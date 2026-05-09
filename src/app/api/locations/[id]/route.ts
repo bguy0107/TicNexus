@@ -3,6 +3,7 @@ import { getApiSession } from "@/lib/session"
 import { db } from "@/lib/db"
 import { createAuditLog } from "@/lib/audit"
 import { hasPermission, isHigherRole } from "@/lib/permissions"
+import { getFranchiseMgrLocationIds } from "@/lib/scope"
 import { getIpFromRequest } from "@/lib/utils"
 import { z } from "zod"
 import type { Role } from "@prisma/client"
@@ -12,6 +13,22 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   const { id } = await params
+  const role = session.user.role as Role
+  const userId = session.user.id
+
+  // [H3] Enforce read scope on individual location fetch
+  if (!hasPermission(role, "location:read:all")) {
+    if (role === "FRANCHISE_MANAGER") {
+      const allowed = await getFranchiseMgrLocationIds(userId)
+      if (!allowed.includes(id)) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+      }
+    } else {
+      const ul = await db.userLocation.findFirst({ where: { userId, locationId: id } })
+      if (!ul) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+  }
+
   const location = await db.location.findUnique({
     where: { id, deletedAt: null },
     include: {

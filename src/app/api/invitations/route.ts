@@ -122,6 +122,11 @@ export async function GET(request: NextRequest) {
   const actorRole = session.user.role as Role
   const actorId = session.user.id
 
+  // [C4] Only roles that can invite at least one other role may list invitations
+  if (!canCreateRole(actorRole, "STORE_USER")) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  }
+
   // Base filter: not yet accepted (include expired so admins can resend)
   const baseWhere = { acceptedAt: null }
 

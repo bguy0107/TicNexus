@@ -7,6 +7,8 @@ import { getIpFromRequest } from "@/lib/utils"
 import { z } from "zod"
 import type { Role } from "@prisma/client"
 
+const locationCountFilter = { where: { deletedAt: null } } as const
+
 export async function GET(request: NextRequest) {
   const session = await getApiSession(request.headers)
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -17,7 +19,9 @@ export async function GET(request: NextRequest) {
   if (hasPermission(role, "franchise:read:all")) {
     const franchises = await db.franchise.findMany({
       where: { deletedAt: null },
-      include: { _count: { select: { locations: true, userFranchises: true } } },
+      include: {
+        _count: { select: { locations: locationCountFilter, userFranchises: true } },
+      },
       orderBy: { name: "asc" },
     })
     return NextResponse.json({ franchises })
@@ -25,15 +29,20 @@ export async function GET(request: NextRequest) {
 
   if (hasPermission(role, "franchise:read:own")) {
     if (role === "FRANCHISE_MANAGER") {
-      const uf = await db.userFranchise.findFirst({
+      // [H1] Use findMany so a FM assigned to multiple franchises sees all of them
+      const ufs = await db.userFranchise.findMany({
         where: { userId },
-        include: {
-          franchise: {
-            include: { _count: { select: { locations: true, userFranchises: true } } },
-          },
-        },
+        select: { franchiseId: true },
       })
-      return NextResponse.json({ franchises: uf ? [uf.franchise] : [] })
+      if (ufs.length === 0) return NextResponse.json({ franchises: [] })
+      const franchises = await db.franchise.findMany({
+        where: { id: { in: ufs.map((u) => u.franchiseId) }, deletedAt: null },
+        include: {
+          _count: { select: { locations: locationCountFilter, userFranchises: true } },
+        },
+        orderBy: { name: "asc" },
+      })
+      return NextResponse.json({ franchises })
     }
 
     const uls = await db.userLocation.findMany({

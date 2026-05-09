@@ -21,11 +21,15 @@ export type FullSession = {
 }
 
 export async function getApiSession(reqHeaders: Headers): Promise<FullSession | null> {
-  return auth.api.getSession({ headers: reqHeaders }) as Promise<FullSession | null>
+  const session = (await auth.api.getSession({ headers: reqHeaders })) as FullSession | null
+  if (session?.user.deletedAt) return null
+  return session
 }
 
 export async function getSession(): Promise<FullSession | null> {
-  return auth.api.getSession({ headers: await headers() }) as Promise<FullSession | null>
+  const session = (await auth.api.getSession({ headers: await headers() })) as FullSession | null
+  if (session?.user.deletedAt) return null
+  return session
 }
 
 export async function requireAuth(): Promise<FullSession> {

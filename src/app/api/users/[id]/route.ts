@@ -7,6 +7,7 @@ import {
   isTargetInFranchiseMgrScope,
   isTargetInLocationScope,
   getFranchiseMgrLocationIds,
+  getFranchiseMgrFranchiseIds,
   getSupervisorLocationIds,
 } from "@/lib/scope"
 import { getIpFromRequest } from "@/lib/utils"
@@ -48,7 +49,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           return NextResponse.json({ error: "Forbidden" }, { status: 403 })
         }
       } else {
-        // SUPERVISOR, TECHNICIAN, STORE_USER: target must share a location
         if (!(await isTargetInLocationScope(actorId, id))) {
           return NextResponse.json({ error: "Forbidden" }, { status: 403 })
         }
@@ -67,6 +67,14 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const actorRole = session.user.role as Role
   const actorId = session.user.id
 
+  // [C1] Require explicit update permission before rank check
+  if (
+    !hasPermission(actorRole, "user:update:any") &&
+    !hasPermission(actorRole, "user:update:below")
+  ) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  }
+
   const target = await db.user.findUnique({ where: { id, deletedAt: null } })
   if (!target) return NextResponse.json({ error: "Not found" }, { status: 404 })
 
@@ -74,7 +82,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 
-  // Scope check for non-admins
   if (actorRole === "FRANCHISE_MANAGER") {
     if (!(await isTargetInFranchiseMgrScope(actorId, id))) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
@@ -113,7 +120,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     return NextResponse.json({ error: "Invalid department" }, { status: 400 })
   }
 
-  // Role change: requires user:update:role and the new role must be one actor can create
   if (role !== undefined && role !== target.role) {
     if (!hasPermission(actorRole, "user:update:role")) {
       return NextResponse.json({ error: "Forbidden: cannot change roles" }, { status: 403 })
@@ -123,7 +129,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     }
   }
 
-  // Assignment changes: requires user:update:assignments, and locations must be within actor's scope
   const hasAssignmentChanges =
     addLocationIds?.length ||
     removeLocationIds?.length ||
@@ -141,25 +146,83 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       )
     }
 
-    if (actorRole === "FRANCHISE_MANAGER" && addLocationIds?.length) {
-      const allowed = await getFranchiseMgrLocationIds(actorId)
-      const invalid = (addLocationIds as string[]).filter((lid) => !allowed.includes(lid))
-      if (invalid.length > 0) {
-        return NextResponse.json(
-          { error: "Forbidden: location outside your franchise" },
-          { status: 403 }
+    if (actorRole === "FRANCHISE_MANAGER") {
+      const allowedLocations = await getFranchiseMgrLocationIds(actorId)
+      const allowedFranchises = await getFranchiseMgrFranchiseIds(actorId)
+
+      if (addLocationIds?.length) {
+        const invalid = (addLocationIds as string[]).filter(
+          (lid) => !allowedLocations.includes(lid)
         )
+        if (invalid.length > 0) {
+          return NextResponse.json(
+            { error: "Forbidden: location outside your franchise" },
+            { status: 403 }
+          )
+        }
+      }
+      // [M3] Validate remove IDs against scope
+      if (removeLocationIds?.length) {
+        const invalid = (removeLocationIds as string[]).filter(
+          (lid) => !allowedLocations.includes(lid)
+        )
+        if (invalid.length > 0) {
+          return NextResponse.json(
+            { error: "Forbidden: location outside your franchise" },
+            { status: 403 }
+          )
+        }
+      }
+      // [C3] Validate franchise add/remove against scope
+      if (addFranchiseIds?.length) {
+        const invalid = (addFranchiseIds as string[]).filter(
+          (fid) => !allowedFranchises.includes(fid)
+        )
+        if (invalid.length > 0) {
+          return NextResponse.json(
+            { error: "Forbidden: franchise outside your scope" },
+            { status: 403 }
+          )
+        }
+      }
+      if (removeFranchiseIds?.length) {
+        const invalid = (removeFranchiseIds as string[]).filter(
+          (fid) => !allowedFranchises.includes(fid)
+        )
+        if (invalid.length > 0) {
+          return NextResponse.json(
+            { error: "Forbidden: franchise outside your scope" },
+            { status: 403 }
+          )
+        }
       }
     }
 
-    if (actorRole === "SUPERVISOR" && addLocationIds?.length) {
-      const allowed = await getSupervisorLocationIds(actorId)
-      const invalid = (addLocationIds as string[]).filter((lid) => !allowed.includes(lid))
-      if (invalid.length > 0) {
-        return NextResponse.json(
-          { error: "Forbidden: location outside your scope" },
-          { status: 403 }
+    if (actorRole === "SUPERVISOR") {
+      const allowedLocations = await getSupervisorLocationIds(actorId)
+
+      if (addLocationIds?.length) {
+        const invalid = (addLocationIds as string[]).filter(
+          (lid) => !allowedLocations.includes(lid)
         )
+        if (invalid.length > 0) {
+          return NextResponse.json(
+            { error: "Forbidden: location outside your scope" },
+            { status: 403 }
+          )
+        }
+      }
+      // [M3] Validate remove IDs against scope
+      if (removeLocationIds?.length) {
+        const invalid = (removeLocationIds as string[]).filter(
+          (lid) => !allowedLocations.includes(lid)
+        )
+        if (invalid.length > 0) {
+          return NextResponse.json(
+            { error: "Forbidden: location outside your scope" },
+            { status: 403 }
+          )
+        }
       }
     }
   }
@@ -192,8 +255,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     userUpdates.department = department
   }
 
-  const updatedUser = await db.$transaction(async (tx) => {
-    const user = await tx.user.update({ where: { id }, data: userUpdates })
+  await db.$transaction(async (tx) => {
+    if (Object.keys(userUpdates).length > 0) {
+      await tx.user.update({ where: { id }, data: userUpdates })
+    }
 
     if (addLocationIds?.length) {
       await tx.userLocation.createMany({
@@ -204,11 +269,13 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         })),
         skipDuplicates: true,
       })
+      after.addedLocationIds = addLocationIds
     }
     if (removeLocationIds?.length) {
       await tx.userLocation.deleteMany({
         where: { userId: id, locationId: { in: removeLocationIds as string[] } },
       })
+      after.removedLocationIds = removeLocationIds
     }
     if (addFranchiseIds?.length) {
       await tx.userFranchise.createMany({
@@ -219,17 +286,18 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         })),
         skipDuplicates: true,
       })
+      after.addedFranchiseIds = addFranchiseIds
     }
     if (removeFranchiseIds?.length) {
       await tx.userFranchise.deleteMany({
         where: { userId: id, franchiseId: { in: removeFranchiseIds as string[] } },
       })
+      after.removedFranchiseIds = removeFranchiseIds
     }
-
-    return user
   })
 
-  if (Object.keys(before).length > 0) {
+  // [H2] Gate on `after` so assignment-only changes are logged
+  if (Object.keys(after).length > 0) {
     await createAuditLog({
       actorId,
       action: "UPDATE",
@@ -240,7 +308,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     })
   }
 
-  return NextResponse.json(updatedUser)
+  const updated = await db.user.findUnique({ where: { id }, select: userSelect })
+  return NextResponse.json(updated)
 }
 
 export async function DELETE(
@@ -256,6 +325,14 @@ export async function DELETE(
 
   if (id === actorId) {
     return NextResponse.json({ error: "Cannot deactivate your own account" }, { status: 400 })
+  }
+
+  // [C1] Require explicit deactivate permission
+  if (
+    !hasPermission(actorRole, "user:deactivate:any") &&
+    !hasPermission(actorRole, "user:deactivate:below")
+  ) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 
   const target = await db.user.findUnique({ where: { id, deletedAt: null } })
@@ -275,7 +352,11 @@ export async function DELETE(
     }
   }
 
-  await db.user.update({ where: { id }, data: { deletedAt: new Date() } })
+  // [C2] Revoke all active sessions for the deactivated user
+  await db.$transaction(async (tx) => {
+    await tx.user.update({ where: { id }, data: { deletedAt: new Date() } })
+    await tx.session.deleteMany({ where: { userId: id } })
+  })
 
   await createAuditLog({
     actorId,
