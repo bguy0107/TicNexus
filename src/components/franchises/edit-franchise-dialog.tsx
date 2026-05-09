@@ -21,8 +21,15 @@ import {
 } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/components/ui/use-toast"
-import { X, Plus } from "lucide-react"
-import type { FranchiseWithDetails } from "@/types"
+import { useSession } from "@/lib/auth-client"
+import { hasPermission } from "@/lib/permissions"
+import { X } from "lucide-react"
+import type { FranchiseWithDetails, Role } from "@/types"
+
+interface FranchiseSummary {
+  id: string
+  name: string
+}
 
 interface Manager {
   id: string
@@ -34,12 +41,6 @@ interface Location {
   id: string
   name: string
   address: string | null
-}
-interface NewLocation {
-  tempId: string
-  name: string
-  locationNumber: string
-  address: string
 }
 
 interface FranchiseDetail {
@@ -69,20 +70,28 @@ export function EditFranchiseDialog({
   const [name, setName] = useState("")
   const [currentManagerIds, setCurrentManagerIds] = useState<string[]>([])
   const [currentLocationIds, setCurrentLocationIds] = useState<string[]>([])
-  const [newLocations, setNewLocations] = useState<NewLocation[]>([])
-  const [newLocName, setNewLocName] = useState("")
-  const [newLocNumber, setNewLocNumber] = useState("")
-  const [newLocAddress, setNewLocAddress] = useState("")
 
   const [saving, setSaving] = useState(false)
+  const [deleteStep, setDeleteStep] = useState<0 | 1>(0)
+  const [deleting, setDeleting] = useState(false)
+
+  const [locationAction, setLocationAction] = useState<{ location: Location } | null>(null)
+  const [locationActionChoice, setLocationActionChoice] = useState<"delete" | "reassign">("delete")
+  const [reassignFranchiseId, setReassignFranchiseId] = useState("")
+  const [otherFranchises, setOtherFranchises] = useState<FranchiseSummary[]>([])
+  const [loadingFranchises, setLoadingFranchises] = useState(false)
+  const [savingLocationAction, setSavingLocationAction] = useState(false)
+
   const { toast } = useToast()
+  const { data: session } = useSession()
+  const actorRole = (session?.user as { role?: Role })?.role ?? "STORE_USER"
+  const canDelete = hasPermission(actorRole, "franchise:delete")
+  const canRemoveLocations = actorRole === "ADMIN"
 
   useEffect(() => {
     if (!open) return
-    setNewLocations([])
-    setNewLocName("")
-    setNewLocNumber("")
-    setNewLocAddress("")
+    setDeleteStep(0)
+    setDeleting(false)
 
     setLoadingDetail(true)
     Promise.all([
@@ -100,24 +109,62 @@ export function EditFranchiseDialog({
     })
   }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    if (!locationAction) return
+    setLocationActionChoice("delete")
+    setReassignFranchiseId("")
+    setLoadingFranchises(true)
+    fetch("/api/franchises")
+      .then((r) => r.json())
+      .then((data) => {
+        setOtherFranchises(
+          (data.franchises ?? []).filter((f: FranchiseSummary) => f.id !== franchise.id)
+        )
+        setLoadingFranchises(false)
+      })
+  }, [locationAction, franchise.id])
+
+  const handleLocationAction = async () => {
+    if (!locationAction) return
+    setSavingLocationAction(true)
+
+    let res: Response
+    if (locationActionChoice === "delete") {
+      res = await fetch(`/api/locations/${locationAction.location.id}`, { method: "DELETE" })
+    } else {
+      if (!reassignFranchiseId) {
+        setSavingLocationAction(false)
+        return
+      }
+      res = await fetch(`/api/locations/${locationAction.location.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ franchiseId: reassignFranchiseId }),
+      })
+    }
+
+    const data = res.ok ? null : await res.json()
+    setSavingLocationAction(false)
+
+    if (!res.ok) {
+      toast({ title: "Error", description: data?.error, variant: "destructive" })
+      return
+    }
+
+    const label =
+      locationActionChoice === "delete"
+        ? `${locationAction.location.name} deleted`
+        : `${locationAction.location.name} reassigned`
+    toast({ title: label })
+    setLocationAction(null)
+
+    const updated = await fetch(`/api/franchises/${franchise.id}`).then((r) => r.json())
+    setDetail(updated)
+    setCurrentLocationIds(updated.locations.map((l: Location) => l.id))
+  }
+
   const originalManagerIds = detail?.userFranchises.map((uf) => uf.user.id) ?? []
   const originalLocationIds = detail?.locations.map((l) => l.id) ?? []
-
-  const handleAddNewLocation = () => {
-    if (!newLocName.trim() || !newLocNumber.trim()) return
-    setNewLocations((prev) => [
-      ...prev,
-      {
-        tempId: crypto.randomUUID(),
-        name: newLocName.trim(),
-        locationNumber: newLocNumber.trim(),
-        address: newLocAddress.trim(),
-      },
-    ])
-    setNewLocName("")
-    setNewLocNumber("")
-    setNewLocAddress("")
-  }
 
   const handleSave = async () => {
     if (!detail) return
@@ -131,12 +178,6 @@ export function EditFranchiseDialog({
     if (name.trim() !== detail.name) body.name = name.trim()
     if (addManagerIds.length) body.addManagerIds = addManagerIds
     if (removeManagerIds.length) body.removeManagerIds = removeManagerIds
-    if (newLocations.length)
-      body.addLocations = newLocations.map(({ name: n, locationNumber: ln, address: a }) => ({
-        name: n,
-        locationNumber: ln,
-        address: a || undefined,
-      }))
     if (removeLocationIds.length) body.removeLocationIds = removeLocationIds
 
     if (Object.keys(body).length === 0) {
@@ -159,6 +200,22 @@ export function EditFranchiseDialog({
       toast({ title: "Franchise updated" })
       onOpenChange(false)
       onSuccess()
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!detail) return
+    setDeleting(true)
+    const res = await fetch(`/api/franchises/${detail.id}`, { method: "DELETE" })
+    setDeleting(false)
+    if (res.ok) {
+      toast({ title: "Franchise deleted", description: `${detail.name} has been deleted.` })
+      onOpenChange(false)
+      onSuccess()
+    } else {
+      const data = await res.json()
+      toast({ title: "Error", description: data.error, variant: "destructive" })
+      setDeleteStep(0)
     }
   }
 
@@ -237,9 +294,7 @@ export function EditFranchiseDialog({
             {/* Locations */}
             <div className="space-y-3">
               <Label>Locations</Label>
-
-              {/* Existing locations */}
-              {currentLocations.length === 0 && newLocations.length === 0 ? (
+              {currentLocations.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No locations</p>
               ) : (
                 <ul className="space-y-1">
@@ -254,88 +309,162 @@ export function EditFranchiseDialog({
                           <span className="ml-2 text-muted-foreground text-xs">{l.address}</span>
                         )}
                       </span>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setCurrentLocationIds((prev) => prev.filter((id) => id !== l.id))
-                        }
-                        className="text-muted-foreground hover:text-destructive"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </li>
-                  ))}
-                  {/* Queued new locations */}
-                  {newLocations.map((l) => (
-                    <li
-                      key={l.tempId}
-                      className="flex items-center justify-between rounded-md border border-dashed px-3 py-2 text-sm text-muted-foreground"
-                    >
-                      <span>
-                        <span className="font-mono text-xs mr-1">{l.locationNumber}</span>
-                        {l.name}
-                        {l.address && <span className="ml-2 text-xs">{l.address}</span>}
-                        <span className="ml-2 text-xs">(new)</span>
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setNewLocations((prev) => prev.filter((n) => n.tempId !== l.tempId))
-                        }
-                        className="hover:text-destructive"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
+                      {canRemoveLocations && (
+                        <button
+                          type="button"
+                          onClick={() => setLocationAction({ location: l })}
+                          className="text-muted-foreground hover:text-destructive"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      )}
                     </li>
                   ))}
                 </ul>
               )}
-
-              {/* Add new location */}
-              <div className="space-y-2 rounded-md border border-dashed p-3">
-                <p className="text-xs text-muted-foreground font-medium">Add location</p>
-                <Input
-                  placeholder="Location ID (e.g. 001)"
-                  value={newLocNumber}
-                  onChange={(e) => setNewLocNumber(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleAddNewLocation()}
-                  className="font-mono"
-                />
-                <Input
-                  placeholder="Location name"
-                  value={newLocName}
-                  onChange={(e) => setNewLocName(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleAddNewLocation()}
-                />
-                <Input
-                  placeholder="Address (optional)"
-                  value={newLocAddress}
-                  onChange={(e) => setNewLocAddress(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleAddNewLocation()}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="gap-1"
-                  onClick={handleAddNewLocation}
-                  disabled={!newLocName.trim() || !newLocNumber.trim()}
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  Add
-                </Button>
-              </div>
             </div>
           </div>
         )}
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
-            Cancel
-          </Button>
-          <Button onClick={handleSave} disabled={saving || loadingDetail}>
-            {saving ? "Saving…" : "Save changes"}
-          </Button>
+        {/* Location action sub-dialog */}
+        <Dialog
+          open={!!locationAction}
+          onOpenChange={(open) => {
+            if (!open) setLocationAction(null)
+          }}
+        >
+          <DialogContent className="sm:max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Remove {locationAction?.location.name}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <div className="space-y-3">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="locationAction"
+                    value="delete"
+                    checked={locationActionChoice === "delete"}
+                    onChange={() => setLocationActionChoice("delete")}
+                    className="mt-0.5"
+                  />
+                  <span className="text-sm">
+                    <span className="font-medium">Delete location entirely</span>
+                    <span className="block text-muted-foreground text-xs mt-0.5">
+                      Permanently removes this location from the system.
+                    </span>
+                  </span>
+                </label>
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="locationAction"
+                    value="reassign"
+                    checked={locationActionChoice === "reassign"}
+                    onChange={() => setLocationActionChoice("reassign")}
+                    className="mt-0.5"
+                  />
+                  <span className="text-sm font-medium">Assign to a different franchise</span>
+                </label>
+              </div>
+              {locationActionChoice === "reassign" && (
+                <div className="pl-6">
+                  {loadingFranchises ? (
+                    <p className="text-sm text-muted-foreground">Loading franchises…</p>
+                  ) : otherFranchises.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No other franchises available.</p>
+                  ) : (
+                    <Select value={reassignFranchiseId} onValueChange={setReassignFranchiseId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select franchise…" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {otherFranchises.map((f) => (
+                          <SelectItem key={f.id} value={f.id}>
+                            {f.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setLocationAction(null)}
+                disabled={savingLocationAction}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleLocationAction}
+                disabled={
+                  savingLocationAction ||
+                  (locationActionChoice === "reassign" && !reassignFranchiseId)
+                }
+                variant="default"
+              >
+                {savingLocationAction ? "Saving…" : "Save"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <DialogFooter className="flex-col sm:flex-row sm:justify-between gap-2">
+          <div className="flex items-center gap-2">
+            {canDelete && !loadingDetail && (
+              <>
+                {deleteStep === 0 ? (
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setDeleteStep(1)}
+                    disabled={saving || deleting}
+                  >
+                    Delete franchise
+                  </Button>
+                ) : (
+                  <>
+                    <span className="text-sm text-destructive">
+                      Delete {detail?.name} and all {franchise._count.locations} location(s)? This
+                      cannot be undone.
+                    </span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setDeleteStep(0)}
+                      disabled={deleting}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      onClick={handleDelete}
+                      disabled={deleting}
+                    >
+                      {deleting ? "Deleting…" : "Yes, delete"}
+                    </Button>
+                  </>
+                )}
+              </>
+            )}
+          </div>
+          {deleteStep === 0 && (
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
+                Cancel
+              </Button>
+              <Button onClick={handleSave} disabled={saving || loadingDetail}>
+                {saving ? "Saving…" : "Save changes"}
+              </Button>
+            </div>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

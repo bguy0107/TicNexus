@@ -20,7 +20,12 @@ interface ChangePasswordDialogProps {
   onOpenChange: (open: boolean) => void
 }
 
-export function ChangePasswordDialog({ userId, userName, open, onOpenChange }: ChangePasswordDialogProps) {
+export function ChangePasswordDialog({
+  userId,
+  userName,
+  open,
+  onOpenChange,
+}: ChangePasswordDialogProps) {
   const { toast } = useToast()
   const [password, setPassword] = useState("")
   const [confirm, setConfirm] = useState("")
@@ -50,7 +55,10 @@ export function ChangePasswordDialog({ userId, userName, open, onOpenChange }: C
     const data = await res.json()
     setSubmitting(false)
     if (res.ok) {
-      toast({ title: "Password updated", description: `Password for ${userName} has been changed.` })
+      toast({
+        title: "Password updated",
+        description: `Password for ${userName} has been changed.`,
+      })
       handleClose()
     } else {
       toast({ title: "Error", description: data.error, variant: "destructive" })

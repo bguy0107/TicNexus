@@ -36,7 +36,11 @@ export default function ChangePasswordPage() {
       revokeOtherSessions: true,
     })
     if (result.error) {
-      toast({ title: "Error", description: result.error.message ?? "Could not change password", variant: "destructive" })
+      toast({
+        title: "Error",
+        description: result.error.message ?? "Could not change password",
+        variant: "destructive",
+      })
       setSubmitting(false)
       return
     }

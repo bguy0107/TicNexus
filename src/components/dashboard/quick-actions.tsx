@@ -31,6 +31,12 @@ interface Franchise {
   name: string
 }
 
+interface Location {
+  id: string
+  name: string
+  franchiseId: string
+}
+
 const ALL_ROLES: { value: Role; label: string }[] = [
   { value: "FRANCHISE_MANAGER", label: "Franchise Manager" },
   { value: "SUPERVISOR", label: "Supervisor" },
@@ -46,6 +52,7 @@ const INVITE_ROLES: { value: Role; label: string }[] = [
 export function QuickActions() {
   const [open, setOpen] = useState<DialogType>(null)
   const [franchises, setFranchises] = useState<Franchise[]>([])
+  const [locations, setLocations] = useState<Location[]>([])
   const [submitting, setSubmitting] = useState(false)
   const { toast } = useToast()
 
@@ -65,23 +72,43 @@ export function QuickActions() {
   const [createRole, setCreateRole] = useState<Role | "">("")
   const [createDept, setCreateDept] = useState<"IT" | "MAINTENANCE" | "">("")
   const [createPassword, setCreatePassword] = useState("")
+  const [createFranchiseId, setCreateFranchiseId] = useState("")
+  const [createLocationId, setCreateLocationId] = useState("")
 
   // Add Location state
-  const [locForm, setLocForm] = useState({ name: "", locationNumber: "", address: "", franchiseId: "" })
+  const [locForm, setLocForm] = useState({
+    name: "",
+    locationNumber: "",
+    address: "",
+    franchiseId: "",
+  })
 
   useEffect(() => {
     if (open === "user" || open === "location") {
-      fetch("/api/franchises")
-        .then((r) => r.json())
-        .then((d) => setFranchises(d.franchises ?? []))
+      Promise.all([
+        fetch("/api/franchises").then((r) => r.json()),
+        fetch("/api/locations").then((r) => r.json()),
+      ]).then(([franchiseData, locationData]) => {
+        setFranchises(franchiseData.franchises ?? [])
+        setLocations(locationData.locations ?? [])
+      })
     }
   }, [open])
 
   function resetAll() {
     setFranchiseName("")
-    setInviteEmail(""); setInviteRole(""); setInviteDept(""); setInviteFranchiseId("")
-    setCreateEmail(""); setCreateFirstName(""); setCreateLastName("")
-    setCreateRole(""); setCreateDept(""); setCreatePassword("")
+    setInviteEmail("")
+    setInviteRole("")
+    setInviteDept("")
+    setInviteFranchiseId("")
+    setCreateEmail("")
+    setCreateFirstName("")
+    setCreateLastName("")
+    setCreateRole("")
+    setCreateDept("")
+    setCreatePassword("")
+    setCreateFranchiseId("")
+    setCreateLocationId("")
     setLocForm({ name: "", locationNumber: "", address: "", franchiseId: "" })
   }
 
@@ -131,7 +158,8 @@ export function QuickActions() {
   }
 
   async function handleCreateUser() {
-    if (!createEmail || !createFirstName || !createLastName || !createRole || !createPassword) return
+    if (!createEmail || !createFirstName || !createLastName || !createRole || !createPassword)
+      return
     if (createRole === "TECHNICIAN" && !createDept) return
     setSubmitting(true)
     const body: Record<string, string> = {
@@ -142,6 +170,8 @@ export function QuickActions() {
       password: createPassword,
     }
     if (createDept) body.department = createDept
+    if (createFranchiseId) body.franchiseId = createFranchiseId
+    if (createLocationId) body.locationId = createLocationId
     const res = await fetch("/api/users", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -150,7 +180,10 @@ export function QuickActions() {
     const data = await res.json()
     setSubmitting(false)
     if (res.ok) {
-      toast({ title: "User created", description: `${createFirstName} ${createLastName} has been created and will be prompted to change their password on first login.` })
+      toast({
+        title: "User created",
+        description: `${createFirstName} ${createLastName} has been created and will be prompted to change their password on first login.`,
+      })
       closeDialog()
     } else {
       toast({ title: "Error", description: data.error, variant: "destructive" })
@@ -182,15 +215,30 @@ export function QuickActions() {
           <CardTitle className="text-sm font-medium">Quick Actions</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-2">
-          <Button size="sm" variant="outline" className="gap-2 min-h-[44px]" onClick={() => setOpen("franchise")}>
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-2 min-h-[44px]"
+            onClick={() => setOpen("franchise")}
+          >
             <Building2 className="h-4 w-4" />
             Add Franchise
           </Button>
-          <Button size="sm" variant="outline" className="gap-2 min-h-[44px]" onClick={() => setOpen("user")}>
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-2 min-h-[44px]"
+            onClick={() => setOpen("user")}
+          >
             <UserPlus className="h-4 w-4" />
             Add User
           </Button>
-          <Button size="sm" variant="outline" className="gap-2 min-h-[44px]" onClick={() => setOpen("location")}>
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-2 min-h-[44px]"
+            onClick={() => setOpen("location")}
+          >
             <MapPin className="h-4 w-4" />
             Add Location
           </Button>
@@ -213,7 +261,9 @@ export function QuickActions() {
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={closeDialog}>Cancel</Button>
+            <Button variant="outline" onClick={closeDialog}>
+              Cancel
+            </Button>
             <Button onClick={handleAddFranchise} disabled={submitting || !franchiseName.trim()}>
               {submitting ? "Creating…" : "Create"}
             </Button>
@@ -223,14 +273,18 @@ export function QuickActions() {
 
       {/* Add User Dialog — Invite or Create tabs */}
       <Dialog open={open === "user"} onOpenChange={(v) => !v && closeDialog()}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add User</DialogTitle>
           </DialogHeader>
           <Tabs defaultValue="create">
             <TabsList className="w-full">
-              <TabsTrigger value="create" className="flex-1">Create directly</TabsTrigger>
-              <TabsTrigger value="invite" className="flex-1">Send invitation</TabsTrigger>
+              <TabsTrigger value="create" className="flex-1">
+                Create directly
+              </TabsTrigger>
+              <TabsTrigger value="invite" className="flex-1">
+                Send invitation
+              </TabsTrigger>
             </TabsList>
 
             {/* Create directly tab */}
@@ -238,24 +292,46 @@ export function QuickActions() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label>First name</Label>
-                  <Input placeholder="Jane" value={createFirstName} onChange={(e) => setCreateFirstName(e.target.value)} />
+                  <Input
+                    placeholder="Jane"
+                    value={createFirstName}
+                    onChange={(e) => setCreateFirstName(e.target.value)}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Last name</Label>
-                  <Input placeholder="Smith" value={createLastName} onChange={(e) => setCreateLastName(e.target.value)} />
+                  <Input
+                    placeholder="Smith"
+                    value={createLastName}
+                    onChange={(e) => setCreateLastName(e.target.value)}
+                  />
                 </div>
               </div>
               <div className="space-y-2">
                 <Label>Email address</Label>
-                <Input type="email" placeholder="user@example.com" value={createEmail} onChange={(e) => setCreateEmail(e.target.value)} />
+                <Input
+                  type="email"
+                  placeholder="user@example.com"
+                  value={createEmail}
+                  onChange={(e) => setCreateEmail(e.target.value)}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Role</Label>
-                <Select onValueChange={(v) => { setCreateRole(v as Role); setCreateDept("") }}>
-                  <SelectTrigger><SelectValue placeholder="Select a role" /></SelectTrigger>
+                <Select
+                  onValueChange={(v) => {
+                    setCreateRole(v as Role)
+                    setCreateDept("")
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a role" />
+                  </SelectTrigger>
                   <SelectContent>
                     {ALL_ROLES.map((r) => (
-                      <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                      <SelectItem key={r.value} value={r.value}>
+                        {r.label}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -264,7 +340,9 @@ export function QuickActions() {
                 <div className="space-y-2">
                   <Label>Department</Label>
                   <Select onValueChange={(v) => setCreateDept(v as "IT" | "MAINTENANCE")}>
-                    <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select department" />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="IT">IT</SelectItem>
                       <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
@@ -273,18 +351,80 @@ export function QuickActions() {
                 </div>
               )}
               <div className="space-y-2">
+                <Label>
+                  Franchise{" "}
+                  <span className="text-xs text-muted-foreground font-normal">(optional)</span>
+                </Label>
+                <Select
+                  value={createFranchiseId || "__none__"}
+                  onValueChange={(v) => {
+                    setCreateFranchiseId(v === "__none__" ? "" : v)
+                    setCreateLocationId("")
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="None" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">None</SelectItem>
+                    {franchises.map((f) => (
+                      <SelectItem key={f.id} value={f.id}>
+                        {f.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>
+                  Location{" "}
+                  <span className="text-xs text-muted-foreground font-normal">(optional)</span>
+                </Label>
+                <Select
+                  value={createLocationId || "__none__"}
+                  onValueChange={(v) => setCreateLocationId(v === "__none__" ? "" : v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="None" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">None</SelectItem>
+                    {(createFranchiseId
+                      ? locations.filter((l) => l.franchiseId === createFranchiseId)
+                      : locations
+                    ).map((l) => (
+                      <SelectItem key={l.id} value={l.id}>
+                        {l.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
                 <Label>Initial password</Label>
-                <Input type="password" placeholder="Min 8 characters" value={createPassword} onChange={(e) => setCreatePassword(e.target.value)} />
-                <p className="text-xs text-muted-foreground">User will be required to change this on first login.</p>
+                <Input
+                  type="password"
+                  placeholder="Min 8 characters"
+                  value={createPassword}
+                  onChange={(e) => setCreatePassword(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  User will be required to change this on first login.
+                </p>
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={closeDialog}>Cancel</Button>
+                <Button variant="outline" onClick={closeDialog}>
+                  Cancel
+                </Button>
                 <Button
                   onClick={handleCreateUser}
                   disabled={
                     submitting ||
-                    !createEmail || !createFirstName || !createLastName ||
-                    !createRole || !createPassword ||
+                    !createEmail ||
+                    !createFirstName ||
+                    !createLastName ||
+                    !createRole ||
+                    !createPassword ||
                     (createRole === "TECHNICIAN" && !createDept)
                   }
                 >
@@ -297,15 +437,29 @@ export function QuickActions() {
             <TabsContent value="invite" className="space-y-4 pt-2">
               <div className="space-y-2">
                 <Label>Email address</Label>
-                <Input type="email" placeholder="user@example.com" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} />
+                <Input
+                  type="email"
+                  placeholder="user@example.com"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Role</Label>
-                <Select onValueChange={(v) => { setInviteRole(v as Role); setInviteDept("") }}>
-                  <SelectTrigger><SelectValue placeholder="Select a role" /></SelectTrigger>
+                <Select
+                  onValueChange={(v) => {
+                    setInviteRole(v as Role)
+                    setInviteDept("")
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a role" />
+                  </SelectTrigger>
                   <SelectContent>
                     {INVITE_ROLES.map((r) => (
-                      <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                      <SelectItem key={r.value} value={r.value}>
+                        {r.label}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -314,7 +468,9 @@ export function QuickActions() {
                 <div className="space-y-2">
                   <Label>Department</Label>
                   <Select onValueChange={(v) => setInviteDept(v as "IT" | "MAINTENANCE")}>
-                    <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select department" />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="IT">IT</SelectItem>
                       <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
@@ -326,22 +482,29 @@ export function QuickActions() {
                 <div className="space-y-2">
                   <Label>Franchise</Label>
                   <Select onValueChange={(v) => setInviteFranchiseId(v)}>
-                    <SelectTrigger><SelectValue placeholder="Select franchise" /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select franchise" />
+                    </SelectTrigger>
                     <SelectContent>
                       {franchises.map((f) => (
-                        <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                        <SelectItem key={f.id} value={f.id}>
+                          {f.name}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
               )}
               <DialogFooter>
-                <Button variant="outline" onClick={closeDialog}>Cancel</Button>
+                <Button variant="outline" onClick={closeDialog}>
+                  Cancel
+                </Button>
                 <Button
                   onClick={handleInviteUser}
                   disabled={
                     submitting ||
-                    !inviteEmail || !inviteRole ||
+                    !inviteEmail ||
+                    !inviteRole ||
                     (inviteRole === "TECHNICIAN" && !inviteDept)
                   }
                 >
@@ -362,31 +525,52 @@ export function QuickActions() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Location name</Label>
-              <Input placeholder="e.g. Downtown Store" value={locForm.name} onChange={(e) => setLocForm((f) => ({ ...f, name: e.target.value }))} />
+              <Input
+                placeholder="e.g. Downtown Store"
+                value={locForm.name}
+                onChange={(e) => setLocForm((f) => ({ ...f, name: e.target.value }))}
+              />
             </div>
             <div className="space-y-2">
               <Label>Location number (optional)</Label>
-              <Input placeholder="e.g. 001" value={locForm.locationNumber} onChange={(e) => setLocForm((f) => ({ ...f, locationNumber: e.target.value }))} />
+              <Input
+                placeholder="e.g. 001"
+                value={locForm.locationNumber}
+                onChange={(e) => setLocForm((f) => ({ ...f, locationNumber: e.target.value }))}
+              />
             </div>
             <div className="space-y-2">
               <Label>Address (optional)</Label>
-              <Input placeholder="123 Main St" value={locForm.address} onChange={(e) => setLocForm((f) => ({ ...f, address: e.target.value }))} />
+              <Input
+                placeholder="123 Main St"
+                value={locForm.address}
+                onChange={(e) => setLocForm((f) => ({ ...f, address: e.target.value }))}
+              />
             </div>
             <div className="space-y-2">
               <Label>Franchise</Label>
               <Select onValueChange={(v) => setLocForm((f) => ({ ...f, franchiseId: v }))}>
-                <SelectTrigger><SelectValue placeholder="Select franchise" /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select franchise" />
+                </SelectTrigger>
                 <SelectContent>
                   {franchises.map((f) => (
-                    <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                    <SelectItem key={f.id} value={f.id}>
+                      {f.name}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={closeDialog}>Cancel</Button>
-            <Button onClick={handleAddLocation} disabled={submitting || !locForm.name.trim() || !locForm.franchiseId}>
+            <Button variant="outline" onClick={closeDialog}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAddLocation}
+              disabled={submitting || !locForm.name.trim() || !locForm.franchiseId}
+            >
               {submitting ? "Creating…" : "Create"}
             </Button>
           </DialogFooter>

@@ -39,7 +39,13 @@ async function initAdmin() {
 
   await db.user.update({
     where: { id: response.user.id },
-    data: { role: "ADMIN", emailVerified: true, firstName: "Admin", lastName: "User", mustChangePassword: true },
+    data: {
+      role: "ADMIN",
+      emailVerified: true,
+      firstName: "Admin",
+      lastName: "User",
+      mustChangePassword: true,
+    },
   })
 
   console.log(`Admin user created: ${email}`)

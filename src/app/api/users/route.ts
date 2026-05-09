@@ -4,7 +4,7 @@ import { db } from "@/lib/db"
 import { auth } from "@/lib/auth"
 import { createAuditLog } from "@/lib/audit"
 import { getIpFromRequest } from "@/lib/utils"
-import type { Role, Prisma } from "@prisma/client"
+import type { Role, Department, Prisma } from "@prisma/client"
 
 export async function GET(request: NextRequest) {
   const session = await getApiSession(request.headers)
@@ -13,7 +13,10 @@ export async function GET(request: NextRequest) {
   const role = session.user.role as Role
   const userId = session.user.id
 
-  const baseWhere: Prisma.UserWhereInput = { deletedAt: null }
+  const deactivated = request.nextUrl.searchParams.get("deactivated") === "true"
+  const baseWhere: Prisma.UserWhereInput = deactivated
+    ? { deletedAt: { not: null } }
+    : { deletedAt: null }
 
   if (role === "ADMIN") {
     const users = await db.user.findMany({
@@ -92,16 +95,21 @@ const userSelect = {
 export async function POST(request: NextRequest) {
   const session = await getApiSession(request.headers)
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  if (session.user.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  if (session.user.role !== "ADMIN")
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
 
   const body = await request.json()
-  const { email, firstName, lastName, role, password } = body as {
-    email?: string
-    firstName?: string
-    lastName?: string
-    role?: string
-    password?: string
-  }
+  const { email, firstName, lastName, role, password, department, franchiseId, locationId } =
+    body as {
+      email?: string
+      firstName?: string
+      lastName?: string
+      role?: string
+      password?: string
+      department?: string
+      franchiseId?: string
+      locationId?: string
+    }
 
   if (!email || !firstName || !lastName || !role || !password) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
@@ -111,7 +119,8 @@ export async function POST(request: NextRequest) {
   }
 
   const existing = await db.user.findUnique({ where: { email: email.toLowerCase() } })
-  if (existing) return NextResponse.json({ error: "A user with that email already exists" }, { status: 409 })
+  if (existing)
+    return NextResponse.json({ error: "A user with that email already exists" }, { status: 409 })
 
   const result = await auth.api.signUpEmail({
     body: {
@@ -127,24 +136,48 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Failed to create user" }, { status: 500 })
   }
 
-  await db.user.update({
-    where: { id: result.user.id },
-    data: {
-      role: role as Role,
-      emailVerified: true,
-      firstName,
-      lastName,
-      mustChangePassword: true,
-      createdById: session.user.id,
-    },
+  const actorId = session.user.id
+  const userId = result.user.id
+
+  await db.$transaction(async (tx) => {
+    await tx.user.update({
+      where: { id: userId },
+      data: {
+        role: role as Role,
+        department: department ? (department as Department) : undefined,
+        emailVerified: true,
+        firstName,
+        lastName,
+        mustChangePassword: true,
+        createdById: actorId,
+      },
+    })
+    if (franchiseId) {
+      await tx.userFranchise.create({
+        data: { userId, franchiseId, assignedById: actorId },
+      })
+    }
+    if (locationId) {
+      await tx.userLocation.create({
+        data: { userId, locationId, assignedById: actorId },
+      })
+    }
   })
 
   await createAuditLog({
-    actorId: session.user.id,
+    actorId,
     action: "CREATE",
     entityType: "user",
-    entityId: result.user.id,
-    changes: { email, firstName, lastName, role },
+    entityId: userId,
+    changes: {
+      email,
+      firstName,
+      lastName,
+      role,
+      ...(department && { department }),
+      ...(franchiseId && { franchiseId }),
+      ...(locationId && { locationId }),
+    },
     ipAddress: getIpFromRequest(request),
   })
 

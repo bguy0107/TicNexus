@@ -9,6 +9,7 @@ type FullUser = typeof auth.$Infer.Session.user & {
   role: Role
   firstName: string
   lastName: string
+  image?: string | null
   deletedAt?: Date | null
   createdById?: string | null
   mustChangePassword?: boolean

@@ -29,6 +29,8 @@ type Permission =
   | "user:reactivate:below"
   | "user:reset-password:any"
   | "user:reset-password:below"
+  | "user:delete:any"
+  | "user:delete:below"
   | "technician:assign"
 
 const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
@@ -55,6 +57,7 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "user:deactivate:any",
     "user:reactivate:any",
     "user:reset-password:any",
+    "user:delete:any",
     "technician:assign",
   ],
   FRANCHISE_MANAGER: [
@@ -72,6 +75,7 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "user:deactivate:below",
     "user:reactivate:below",
     "user:reset-password:below",
+    "user:delete:below",
     "technician:assign",
   ],
   SUPERVISOR: [
@@ -84,6 +88,7 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "user:deactivate:below",
     "user:reactivate:below",
     "user:reset-password:below",
+    "user:delete:below",
   ],
   TECHNICIAN: ["franchise:read:own", "location:read:own", "user:read:location"],
   STORE_USER: ["location:read:own", "user:read:location"],

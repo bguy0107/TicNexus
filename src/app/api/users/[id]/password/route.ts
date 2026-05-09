@@ -19,7 +19,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (!target) return NextResponse.json({ error: "Not found" }, { status: 404 })
 
   if (!isHigherRole(actorRole, target.role as Role)) {
-    return NextResponse.json({ error: "Cannot change password of a user with equal or higher role" }, { status: 403 })
+    return NextResponse.json(
+      { error: "Cannot change password of a user with equal or higher role" },
+      { status: 403 }
+    )
   }
 
   const body = await request.json()

@@ -1,10 +1,10 @@
 "use client"
 
 import { useState } from "react"
-import { LogOut, Menu } from "lucide-react"
+import { LogOut, Menu, UserCircle } from "lucide-react"
 import { signOut } from "@/lib/auth-client"
 import { useRouter } from "next/navigation"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +17,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { getInitials } from "@/lib/utils"
 import { getRoleLabel } from "@/lib/permissions"
 import { NavLinks } from "./nav-links"
+import { ProfileDialog } from "@/components/users/profile-dialog"
 import type { Role } from "@prisma/client"
 
 interface HeaderProps {
@@ -24,11 +25,13 @@ interface HeaderProps {
   lastName: string
   email: string
   role: Role
+  image: string | null
 }
 
-export function Header({ firstName, lastName, email, role }: HeaderProps) {
+export function Header({ firstName, lastName, email, role, image }: HeaderProps) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
+  const [profileOpen, setProfileOpen] = useState(false)
 
   const handleSignOut = async () => {
     await signOut({ fetchOptions: { onSuccess: () => router.push("/login") } })
@@ -62,6 +65,7 @@ export function Header({ firstName, lastName, email, role }: HeaderProps) {
         <DropdownMenuTrigger asChild>
           <button className="flex items-center gap-2 rounded-md p-1 hover:bg-accent transition-colors">
             <Avatar className="h-8 w-8">
+              {image && <AvatarImage src={image} alt={`${firstName} ${lastName}`} />}
               <AvatarFallback className="bg-secondary text-secondary-foreground text-xs">
                 {getInitials(firstName, lastName)}
               </AvatarFallback>
@@ -82,6 +86,11 @@ export function Header({ firstName, lastName, email, role }: HeaderProps) {
             <p className="text-xs text-muted-foreground font-normal">{email}</p>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
+          <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => setProfileOpen(true)}>
+            <UserCircle className="h-4 w-4" />
+            My Profile
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
           <DropdownMenuItem
             className="gap-2 cursor-pointer text-destructive"
             onClick={handleSignOut}
@@ -91,6 +100,8 @@ export function Header({ firstName, lastName, email, role }: HeaderProps) {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <ProfileDialog open={profileOpen} onOpenChange={setProfileOpen} />
     </header>
   )
 }

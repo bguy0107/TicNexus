@@ -19,13 +19,14 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
+
 import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/components/ui/use-toast"
 import { useSession } from "@/lib/auth-client"
 import { hasPermission, isHigherRole } from "@/lib/permissions"
 import { ChangePasswordDialog } from "./change-password-dialog"
 import { FranchiseAssignmentsDialog } from "./franchise-assignments-dialog"
-import { X } from "lucide-react"
+import { LocationAssignmentsDialog } from "./location-assignments-dialog"
 import type { UserWithRelations, Role, Department } from "@/types"
 
 const ALL_ROLES: { value: Role; label: string }[] = [
@@ -55,7 +56,13 @@ interface EditUserDialogProps {
   readOnly?: boolean
 }
 
-export function EditUserDialog({ user, open, onOpenChange, onSuccess, readOnly = false }: EditUserDialogProps) {
+export function EditUserDialog({
+  user,
+  open,
+  onOpenChange,
+  onSuccess,
+  readOnly = false,
+}: EditUserDialogProps) {
   const { data: session } = useSession()
   const actorRole = (session?.user as { role?: Role })?.role ?? "STORE_USER"
   const isAdmin = actorRole === "ADMIN"
@@ -95,6 +102,7 @@ export function EditUserDialog({ user, open, onOpenChange, onSuccess, readOnly =
   const [showDeactivateConfirm, setShowDeactivateConfirm] = useState(false)
   const [showPasswordDialog, setShowPasswordDialog] = useState(false)
   const [showFranchiseDialog, setShowFranchiseDialog] = useState(false)
+  const [showLocationDialog, setShowLocationDialog] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -212,7 +220,6 @@ export function EditUserDialog({ user, open, onOpenChange, onSuccess, readOnly =
 
   const assignedFranchises = allFranchises.filter((f) => currentFranchiseIds.includes(f.id))
   const assignedLocations = allLocations.filter((l) => currentLocationIds.includes(l.id))
-  const unassignedLocations = allLocations.filter((l) => !currentLocationIds.includes(l.id))
 
   return (
     <>
@@ -365,41 +372,24 @@ export function EditUserDialog({ user, open, onOpenChange, onSuccess, readOnly =
                       <span className="text-sm text-muted-foreground">None assigned</span>
                     ) : (
                       assignedLocations.map((l) => (
-                        <Badge key={l.id} variant="secondary" className="gap-1 pr-1">
+                        <Badge key={l.id} variant="secondary">
                           {l.name}
-                          <span className="text-muted-foreground text-xs">
+                          <span className="ml-1 font-normal text-muted-foreground text-xs">
                             ({l.franchise.name})
                           </span>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setCurrentLocationIds((prev) => prev.filter((id) => id !== l.id))
-                            }
-                            className="ml-1 rounded-sm hover:text-destructive"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
                         </Badge>
                       ))
                     )}
                   </div>
-                  {unassignedLocations.length > 0 && (
-                    <Select
-                      value=""
-                      onValueChange={(id) => setCurrentLocationIds((prev) => [...prev, id])}
-                    >
-                      <SelectTrigger className="text-muted-foreground">
-                        <SelectValue placeholder="Add location…" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {unassignedLocations.map((l) => (
-                          <SelectItem key={l.id} value={l.id}>
-                            {l.name} — {l.franchise.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
+                  <Button
+                    type="button"
+                    variant="default"
+                    size="sm"
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                    onClick={() => setShowLocationDialog(true)}
+                  >
+                    Edit Location Assignments
+                  </Button>
                 </div>
               )}
 
@@ -519,6 +509,16 @@ export function EditUserDialog({ user, open, onOpenChange, onSuccess, readOnly =
           allFranchises={allFranchises}
           currentIds={currentFranchiseIds}
           onSave={setCurrentFranchiseIds}
+        />
+      )}
+
+      {canChangeAssignments && (
+        <LocationAssignmentsDialog
+          open={showLocationDialog}
+          onOpenChange={setShowLocationDialog}
+          allLocations={allLocations}
+          currentIds={currentLocationIds}
+          onSave={setCurrentLocationIds}
         />
       )}
     </>

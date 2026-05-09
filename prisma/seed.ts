@@ -205,7 +205,9 @@ async function seed() {
     })
 
     if (!user || !location) {
-      console.log(`  skip  assignment     ${la.email} → ${la.locationName} (user or location not found)`)
+      console.log(
+        `  skip  assignment     ${la.email} → ${la.locationName} (user or location not found)`
+      )
       continue
     }
 

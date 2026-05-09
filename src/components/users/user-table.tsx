@@ -81,7 +81,10 @@ export function UserTable() {
                   <TableRow
                     key={user.id}
                     className={cn(user.deletedAt && "opacity-50", "cursor-pointer")}
-                    onClick={() => { setEditingUser(user); setEditReadOnly(!canEdit) }}
+                    onClick={() => {
+                      setEditingUser(user)
+                      setEditReadOnly(!canEdit)
+                    }}
                   >
                     <TableCell className="font-medium">
                       {user.firstName} {user.lastName}

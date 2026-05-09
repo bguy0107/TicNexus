@@ -18,20 +18,12 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog"
 import { useToast } from "@/components/ui/use-toast"
 import { formatDate } from "@/lib/utils"
-import { Plus, MoreHorizontal } from "lucide-react"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import { Plus } from "lucide-react"
 import { EditFranchiseDialog } from "./edit-franchise-dialog"
 import type { FranchiseWithDetails, Role } from "@/types"
 
@@ -43,13 +35,6 @@ export function FranchiseTable() {
   const [newName, setNewName] = useState("")
   const [creating, setCreating] = useState(false)
   const [editingFranchise, setEditingFranchise] = useState<FranchiseWithDetails | null>(null)
-  const [confirmDelete, setConfirmDelete] = useState<{
-    id: string
-    name: string
-    locationCount: number
-  } | null>(null)
-  const [deleteStep, setDeleteStep] = useState<1 | 2>(1)
-  const [deleting, setDeleting] = useState(false)
   const { toast } = useToast()
 
   const fetchFranchises = useCallback(async () => {
@@ -82,22 +67,6 @@ export function FranchiseTable() {
       setCreateOpen(false)
       fetchFranchises()
     } else {
-      toast({ title: "Error", description: data.error, variant: "destructive" })
-    }
-  }
-
-  const handleDeleteConfirmed = async () => {
-    if (!confirmDelete) return
-    setDeleting(true)
-    const res = await fetch(`/api/franchises/${confirmDelete.id}`, { method: "DELETE" })
-    setDeleting(false)
-    setConfirmDelete(null)
-    setDeleteStep(1)
-    if (res.ok) {
-      toast({ title: "Franchise deleted" })
-      fetchFranchises()
-    } else {
-      const data = await res.json()
       toast({ title: "Error", description: data.error, variant: "destructive" })
     }
   }
@@ -149,63 +118,34 @@ export function FranchiseTable() {
               <TableHead>Name</TableHead>
               <TableHead>Locations</TableHead>
               <TableHead>Created</TableHead>
-              {actorRole === "ADMIN" && <TableHead className="w-12" />}
             </TableRow>
           </TableHeader>
           <TableBody>
             {franchises.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
                   No franchises found
                 </TableCell>
               </TableRow>
             ) : (
               franchises.map((f) => (
-                <TableRow key={f.id}>
+                <TableRow
+                  key={f.id}
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => setEditingFranchise(f)}
+                >
                   <TableCell className="font-medium">{f.name}</TableCell>
                   <TableCell>{f._count.locations}</TableCell>
                   <TableCell className="text-muted-foreground text-sm">
                     {formatDate(f.createdAt)}
                   </TableCell>
-                  {actorRole === "ADMIN" && (
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            className="cursor-pointer"
-                            onClick={() => setEditingFranchise(f)}
-                          >
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            className="text-destructive cursor-pointer"
-                            onClick={() => {
-                              setConfirmDelete({
-                                id: f.id,
-                                name: f.name,
-                                locationCount: f._count.locations,
-                              })
-                              setDeleteStep(1)
-                            }}
-                          >
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  )}
                 </TableRow>
               ))
             )}
           </TableBody>
         </Table>
       </div>
+
       {editingFranchise && (
         <EditFranchiseDialog
           franchise={editingFranchise}
@@ -216,68 +156,6 @@ export function FranchiseTable() {
           onSuccess={fetchFranchises}
         />
       )}
-
-      <Dialog
-        open={!!confirmDelete}
-        onOpenChange={(open) => {
-          if (!open) {
-            setConfirmDelete(null)
-            setDeleteStep(1)
-          }
-        }}
-      >
-        <DialogContent className="sm:max-w-sm">
-          {deleteStep === 1 ? (
-            <>
-              <DialogHeader>
-                <DialogTitle>Delete franchise</DialogTitle>
-                <DialogDescription>
-                  Are you sure you want to delete{" "}
-                  <span className="font-medium text-foreground">{confirmDelete?.name}</span>?
-                </DialogDescription>
-              </DialogHeader>
-              <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setConfirmDelete(null)
-                    setDeleteStep(1)
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button variant="destructive" onClick={() => setDeleteStep(2)}>
-                  Continue
-                </Button>
-              </DialogFooter>
-            </>
-          ) : (
-            <>
-              <DialogHeader>
-                <DialogTitle>Delete franchise</DialogTitle>
-                <DialogDescription>
-                  Deleting{" "}
-                  <span className="font-medium text-foreground">{confirmDelete?.name}</span> will
-                  also delete{" "}
-                  <span className="font-medium text-foreground">
-                    {confirmDelete?.locationCount ?? 0} location
-                    {confirmDelete?.locationCount !== 1 ? "s" : ""}
-                  </span>{" "}
-                  associated with it. Are you sure you want to proceed?
-                </DialogDescription>
-              </DialogHeader>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setDeleteStep(1)} disabled={deleting}>
-                  Back
-                </Button>
-                <Button variant="destructive" onClick={handleDeleteConfirmed} disabled={deleting}>
-                  {deleting ? "Deleting…" : "Delete franchise"}
-                </Button>
-              </DialogFooter>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }
