@@ -68,13 +68,17 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const session = await getApiSession(request.headers)
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-  if (!hasPermission(session.user.role as Role, "location:update")) {
+  const role = session.user.role as Role
+  const userId = session.user.id
+  const isAdmin = role === "ADMIN"
+  const canUpdateLocation = hasPermission(role, "location:update")
+  const canUpdateAssignments = hasPermission(role, "user:update:assignments")
+
+  if (!canUpdateLocation && !canUpdateAssignments) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 
   const { id } = await params
-  const existing = await db.location.findUnique({ where: { id, deletedAt: null } })
-  if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
 
   const body = await request.json()
   const parsed = patchSchema.safeParse(body)
@@ -83,20 +87,42 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   }
 
   const { name, address, locationNumber, franchiseId, addUserIds, removeUserIds } = parsed.data
-  const isAdmin = session.user.role === "ADMIN"
 
-  // Admin-only fields
-  if (
-    (locationNumber !== undefined ||
-      franchiseId !== undefined ||
-      addUserIds?.length ||
-      removeUserIds?.length) &&
-    !isAdmin
-  ) {
+  const hasFieldChanges =
+    name !== undefined ||
+    address !== undefined ||
+    locationNumber !== undefined ||
+    franchiseId !== undefined
+  const hasAdminOnlyFields = locationNumber !== undefined || franchiseId !== undefined
+  const hasAssignmentChanges = addUserIds?.length || removeUserIds?.length
+
+  if (hasFieldChanges && !canUpdateLocation) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  }
+  if (hasAdminOnlyFields && !isAdmin) {
     return NextResponse.json(
-      { error: "Forbidden: only admins can perform this operation" },
+      { error: "Forbidden: only admins can change location ID or franchise" },
       { status: 403 }
     )
+  }
+  if (hasAssignmentChanges && !canUpdateAssignments) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  }
+
+  const existing = await db.location.findUnique({ where: { id, deletedAt: null } })
+  if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
+
+  // Scope check
+  if (!isAdmin) {
+    if (role === "FRANCHISE_MANAGER") {
+      const allowed = await getFranchiseMgrLocationIds(userId)
+      if (!allowed.includes(id)) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+      }
+    } else {
+      const ul = await db.userLocation.findFirst({ where: { userId, locationId: id } })
+      if (!ul) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
   }
 
   if (addUserIds?.length) {
@@ -114,6 +140,14 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       )
     }
   }
+
+  const hasAssignmentEdit = !!(addUserIds?.length || removeUserIds?.length)
+
+  const existingUserIds = hasAssignmentEdit
+    ? (await db.userLocation.findMany({ where: { locationId: id }, select: { userId: true } })).map(
+        (ul) => ul.userId
+      )
+    : []
 
   const before: Record<string, unknown> = {}
   const after: Record<string, unknown> = {}
@@ -154,12 +188,18 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         })),
         skipDuplicates: true,
       })
-      after.addedUserIds = addUserIds
     }
 
     if (removeUserIds?.length) {
       await tx.userLocation.deleteMany({ where: { locationId: id, userId: { in: removeUserIds } } })
-      after.removedUserIds = removeUserIds
+    }
+
+    if (hasAssignmentEdit) {
+      before.userIds = existingUserIds
+      after.userIds = [
+        ...existingUserIds.filter((uid) => !removeUserIds?.includes(uid)),
+        ...(addUserIds ?? []),
+      ]
     }
   })
 

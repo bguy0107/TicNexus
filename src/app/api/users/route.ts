@@ -64,7 +64,12 @@ export async function GET(request: NextRequest) {
     const users = await db.user.findMany({
       where: {
         ...baseWhere,
-        userLocations: { some: { locationId: { in: locationIds } } },
+        OR: [
+          { userLocations: { some: { locationId: { in: locationIds } } } },
+          // Also include TECHNICIAN/STORE_USER with no location assignments so
+          // supervisors can assign them to their locations.
+          { userLocations: { none: {} }, role: { in: ["TECHNICIAN", "STORE_USER"] } },
+        ],
       },
       select: userSelect,
       orderBy: { createdAt: "desc" },

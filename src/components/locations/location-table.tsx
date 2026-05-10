@@ -212,7 +212,11 @@ export function LocationTable() {
               </TableRow>
             ) : (
               locations.map((l) => (
-                <TableRow key={l.id}>
+                <TableRow
+                  key={l.id}
+                  className="cursor-pointer"
+                  onClick={() => setEditingLocation(l)}
+                >
                   <TableCell className="text-muted-foreground text-sm font-mono">
                     {l.locationNumber ?? "—"}
                   </TableCell>
@@ -223,7 +227,7 @@ export function LocationTable() {
                     {formatDate(l.createdAt)}
                   </TableCell>
                   {isAdmin && (
-                    <TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon">
