@@ -399,11 +399,11 @@ export function EditUserDialog({
                   <div className="space-y-3">
                     {canReactivate && (
                       <Button
-                        variant="outline"
+                        variant="default"
                         size="sm"
                         onClick={handleReactivate}
                         disabled={acting}
-                        className="w-full sm:w-auto"
+                        className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white"
                       >
                         {acting ? "Reactivating…" : "Reactivate user"}
                       </Button>
