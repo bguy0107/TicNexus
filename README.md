@@ -34,8 +34,8 @@ Edit `.env` and fill in every value:
 | `POSTGRES_USER`       | Database username                                                                            |
 | `POSTGRES_PASSWORD`   | Database password — use a strong random value                                                |
 | `POSTGRES_DB`         | Database name                                                                                |
-| `NEXT_PUBLIC_APP_URL` | Full public URL of the app, e.g. `https://app.example.com`                                   |
-| `BETTER_AUTH_URL`     | Same as `NEXT_PUBLIC_APP_URL`                                                                |
+| `NEXT_PUBLIC_APP_URL` | Full public URL of the app — **must exactly match the origin the browser uses, including the port if not 80/443** (e.g. `http://192.168.1.10:3000` or `https://app.example.com`) |
+| `BETTER_AUTH_URL`     | Must be identical to `NEXT_PUBLIC_APP_URL` — see note below                                  |
 | `BETTER_AUTH_SECRET`  | Random 32-byte secret. Generate with: `openssl rand -base64 32`                              |
 | `GMAIL_USER`          | Gmail address used to send transactional email                                               |
 | `GMAIL_APP_PASSWORD`  | [Google App Password](https://myaccount.google.com/apppasswords) (not your account password) |
@@ -45,6 +45,13 @@ The `DATABASE_URL` must use the Docker Compose service hostname (`db`) as the ho
 ```
 DATABASE_URL="postgresql://ticnexus:yourpassword@db:5432/ticnexus"
 ```
+
+> **`BETTER_AUTH_URL` / `NEXT_PUBLIC_APP_URL` — port matching is required.**
+> Both variables must exactly match the origin the browser uses to reach the app, including an explicit port when it is not the default (80 for HTTP, 443 for HTTPS).
+> - Behind a reverse proxy on 80/443: `https://app.example.com`
+> - Direct Docker Compose on port 3000: `http://192.168.1.10:3000`
+>
+> A mismatch causes Better-Auth to reject all sign-in attempts with **"Invalid email or password"**.
 
 ### 3. Build and start
 
@@ -228,6 +235,15 @@ docker compose up -d --build
 - Confirm `GMAIL_USER` and `GMAIL_APP_PASSWORD` are correct in `.env`
 - App Passwords require 2-Step Verification to be enabled on the Google account
 - App Passwords are 16 characters with spaces, e.g. `xxxx xxxx xxxx xxxx`
+
+**Sign-in fails with "Invalid email or password" despite correct credentials**
+
+`BETTER_AUTH_URL` or `NEXT_PUBLIC_APP_URL` does not match the origin the browser uses. Confirm both variables include the correct host **and port** (e.g. `http://192.168.1.10:3000` not `http://192.168.1.10`), then restart the stack:
+
+```bash
+docker compose down
+docker compose up -d
+```
 
 **Session / auth errors after deploying**
 
