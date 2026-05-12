@@ -193,11 +193,12 @@ export function EditLocationDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-lg max-w-[calc(100%-2rem)] flex flex-col max-h-[90vh]">
           <DialogHeader>
             <DialogTitle>{isReadOnly ? location.name : `Edit ${location.name}`}</DialogTitle>
           </DialogHeader>
 
+          <div className="overflow-y-auto flex-1 min-h-0 -mx-6 px-6">
           {loadingDetail ? (
             <p className="text-sm text-muted-foreground py-4">Loading…</p>
           ) : isReadOnly ? (
@@ -376,6 +377,7 @@ export function EditLocationDialog({
               </div>
             </div>
           )}
+          </div>
 
           <DialogFooter>
             {isReadOnly ? (

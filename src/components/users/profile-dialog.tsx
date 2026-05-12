@@ -173,21 +173,22 @@ export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-w-[calc(100%-3rem)] flex flex-col max-h-[90vh]">
           <DialogHeader>
             <DialogTitle>My Profile</DialogTitle>
           </DialogHeader>
 
+          <div className="overflow-y-auto flex-1 min-h-0 -mx-6 px-6">
           {loading ? (
             <div className="flex justify-center py-10">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
           ) : profile ? (
-            <div className="space-y-6">
+            <div className="space-y-4 pb-2">
               {/* Avatar */}
-              <div className="flex flex-col items-center gap-3">
+              <div className="flex flex-col items-center gap-2">
                 <div className="relative">
-                  <Avatar className="h-20 w-20">
+                  <Avatar className="h-16 w-16 sm:h-20 sm:w-20">
                     {previewImage && (
                       <AvatarImage
                         src={previewImage}
@@ -289,6 +290,7 @@ export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
               </Button>
             </div>
           ) : null}
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -300,7 +302,7 @@ export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
           setPwOpen(v)
         }}
       >
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent className="sm:max-w-sm max-w-[calc(100%-2rem)]">
           <DialogHeader>
             <DialogTitle>Change Password</DialogTitle>
           </DialogHeader>

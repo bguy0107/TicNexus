@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge"
 import { UserRoleBadge } from "./user-role-badge"
 import { InviteUserDialog } from "./invite-user-dialog"
 import { EditUserDialog } from "./edit-user-dialog"
-import { formatDate, cn } from "@/lib/utils"
+import { cn } from "@/lib/utils"
 import { isHigherRole, hasPermission } from "@/lib/permissions"
 import type { UserWithRelations, Role } from "@/types"
 
@@ -58,13 +58,12 @@ export function UserTable() {
               <TableHead>Email</TableHead>
               <TableHead>Role</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Joined</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {users.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
                   No users found
                 </TableCell>
               </TableRow>
@@ -110,9 +109,6 @@ export function UserTable() {
                           Active
                         </Badge>
                       )}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">
-                      {formatDate(user.createdAt)}
                     </TableCell>
                   </TableRow>
                 )
