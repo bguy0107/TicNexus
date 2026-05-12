@@ -32,6 +32,12 @@ type Permission =
   | "user:delete:any"
   | "user:delete:below"
   | "technician:assign"
+  | "ticket:read"
+  | "ticket:create"
+  | "ticket:update_status"
+  | "ticket:update_deadline"
+  | "ticket:override_projected"
+  | "franchise:set_cost_limit"
 
 const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
   ADMIN: [
@@ -59,6 +65,12 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "user:reset-password:any",
     "user:delete:any",
     "technician:assign",
+    "ticket:read",
+    "ticket:create",
+    "ticket:update_status",
+    "ticket:update_deadline",
+    "ticket:override_projected",
+    "franchise:set_cost_limit",
   ],
   FRANCHISE_MANAGER: [
     "franchise:read:own",
@@ -77,6 +89,12 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "user:reset-password:below",
     "user:delete:below",
     "technician:assign",
+    "ticket:read",
+    "ticket:create",
+    "ticket:update_status",
+    "ticket:update_deadline",
+    "ticket:override_projected",
+    "franchise:set_cost_limit",
   ],
   SUPERVISOR: [
     "franchise:read:own",
@@ -89,9 +107,21 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "user:reactivate:below",
     "user:reset-password:below",
     "user:delete:below",
+    "ticket:read",
+    "ticket:create",
+    "ticket:update_status",
+    "ticket:update_deadline",
+    "ticket:override_projected",
   ],
-  TECHNICIAN: ["franchise:read:own", "location:read:own", "user:read:location"],
-  STORE_USER: ["location:read:own", "user:read:location"],
+  TECHNICIAN: [
+    "franchise:read:own",
+    "location:read:own",
+    "user:read:location",
+    "ticket:read",
+    "ticket:create",
+    "ticket:update_status",
+  ],
+  STORE_USER: ["location:read:own", "user:read:location", "ticket:read", "ticket:create"],
 }
 
 export function hasPermission(role: Role, permission: Permission): boolean {

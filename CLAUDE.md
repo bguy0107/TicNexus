@@ -181,4 +181,18 @@ When a new sidebar navigation module is added, create a new branch (see Branchin
 - **UI components** — new component files and where they appear in the dashboard.
 - **Scope rules** — how data visibility is restricted by role for this module.
 
-_No additional modules have been added beyond the initial user/franchise/location system documented above._
+### Tickets (`feature/tickets` branch)
+
+- **Purpose** — IT and Maintenance ticket tracking tied to locations. All non-ADMIN roles can create tickets; TECHNICIAN, SUPERVISOR, and FRANCHISE_MANAGER can change ticket status; any user can close a ticket they originally opened.
+- **Data model** — `Ticket` (type: Department enum IT|MAINTENANCE, status: TicketStatus enum, issue, locationId, deadline, createdById) and `TicketHistory` (comment, attachment path, statusFrom, statusTo, userId, ticketId). Uses the existing `Department` enum for ticket type.
+- **Permissions** — `ticket:read` (all roles), `ticket:create` (all roles except ADMIN — ADMIN also has it), `ticket:update_status` (TECHNICIAN, SUPERVISOR, FRANCHISE_MANAGER, ADMIN). Declared in [src/lib/permissions.ts](src/lib/permissions.ts).
+- **API routes**:
+  - `GET /api/tickets` — list tickets (scoped), supports `?type=` and `?status=` filters.
+  - `POST /api/tickets` — create ticket (multipart/form-data, optional file attachment).
+  - `GET /api/tickets/[id]` — ticket detail with full history.
+  - `PATCH /api/tickets/[id]` — update status (JSON body: `{ status, comment? }`).
+  - `POST /api/tickets/[id]/history` — add comment or file attachment (multipart/form-data).
+  - `GET /api/tickets/files?path=<relativePath>` — auth-gated file serving for attachments.
+- **UI components** — live in [src/components/tickets/](src/components/tickets/): `TicketList`, `CreateTicketDialog`, `TicketDetail`, `TicketStatusBadge`.
+- **Scope rules** — ADMIN sees all tickets globally. FRANCHISE_MANAGER sees tickets at locations in their franchises (via `UserFranchise`). SUPERVISOR/TECHNICIAN/STORE_USER see tickets at their assigned locations (via `UserLocation`). Scope helper `getTicketLocationIds` in [src/lib/scope.ts](src/lib/scope.ts) returns `null` for ADMIN (unrestricted) or a location ID list for all other roles.
+- **File uploads** — stored at `uploads/tickets/<ticketId>/<filename>` on the server (persisted via `ticket_uploads` Docker volume). Served via the auth-gated `/api/tickets/files` route; never publicly accessible.
