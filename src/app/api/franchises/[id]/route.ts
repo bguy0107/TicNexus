@@ -54,6 +54,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
 const patchSchema = z.object({
   name: z.string().min(1).optional(),
+  maintenanceCostLimit: z.number().nonnegative().nullable().optional(),
+  itCostLimit: z.number().nonnegative().nullable().optional(),
   addManagerIds: z.array(z.string()).optional(),
   removeManagerIds: z.array(z.string()).optional(),
   addLocations: z
@@ -72,7 +74,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const session = await getApiSession(request.headers)
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-  if (!hasPermission(session.user.role as Role, "franchise:update")) {
+  const role = session.user.role as Role
+  const canUpdate = hasPermission(role, "franchise:update")
+  const canSetCostLimit = hasPermission(role, "franchise:set_cost_limit")
+
+  if (!canUpdate && !canSetCostLimit) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 
@@ -83,19 +89,63 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
   }
 
+  // Users with only franchise:set_cost_limit (FMs) may only update approvalCostLimit
+  if (!canUpdate && canSetCostLimit) {
+    const fmFranchises = await getFranchiseMgrFranchiseIds(session.user.id)
+    if (!fmFranchises.includes(id)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+    const { name, addManagerIds, removeManagerIds, addLocations, removeLocationIds } = parsed.data
+    if (name || addManagerIds || removeManagerIds || addLocations || removeLocationIds) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+  }
+
   const existing = await db.franchise.findUnique({ where: { id, deletedAt: null } })
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
 
-  const { name, addManagerIds, removeManagerIds, addLocations, removeLocationIds } = parsed.data
+  const {
+    name,
+    maintenanceCostLimit,
+    itCostLimit,
+    addManagerIds,
+    removeManagerIds,
+    addLocations,
+    removeLocationIds,
+  } = parsed.data
   const actorId = session.user.id
   const before: Record<string, unknown> = {}
   const after: Record<string, unknown> = {}
 
   await db.$transaction(async (tx) => {
+    const franchiseUpdates: Record<string, unknown> = {}
+
     if (name && name !== existing.name) {
       before.name = existing.name
       after.name = name
-      await tx.franchise.update({ where: { id }, data: { name } })
+      franchiseUpdates.name = name
+    }
+
+    if (maintenanceCostLimit !== undefined) {
+      const oldLimit = existing.maintenanceCostLimit ? Number(existing.maintenanceCostLimit) : null
+      if (maintenanceCostLimit !== oldLimit) {
+        before.maintenanceCostLimit = oldLimit
+        after.maintenanceCostLimit = maintenanceCostLimit
+        franchiseUpdates.maintenanceCostLimit = maintenanceCostLimit
+      }
+    }
+
+    if (itCostLimit !== undefined) {
+      const oldLimit = existing.itCostLimit ? Number(existing.itCostLimit) : null
+      if (itCostLimit !== oldLimit) {
+        before.itCostLimit = oldLimit
+        after.itCostLimit = itCostLimit
+        franchiseUpdates.itCostLimit = itCostLimit
+      }
+    }
+
+    if (Object.keys(franchiseUpdates).length > 0) {
+      await tx.franchise.update({ where: { id }, data: franchiseUpdates })
     }
 
     if (addManagerIds?.length) {

@@ -173,122 +173,124 @@ export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-w-[calc(100%-3rem)] flex flex-col max-h-[90vh]">
           <DialogHeader>
             <DialogTitle>My Profile</DialogTitle>
           </DialogHeader>
 
-          {loading ? (
-            <div className="flex justify-center py-10">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : profile ? (
-            <div className="space-y-6">
-              {/* Avatar */}
-              <div className="flex flex-col items-center gap-3">
-                <div className="relative">
-                  <Avatar className="h-20 w-20">
-                    {previewImage && (
-                      <AvatarImage
-                        src={previewImage}
-                        alt={`${profile.firstName} ${profile.lastName}`}
-                      />
+          <div className="overflow-y-auto flex-1 min-h-0 -mx-6 px-6">
+            {loading ? (
+              <div className="flex justify-center py-10">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : profile ? (
+              <div className="space-y-4 pb-2">
+                {/* Avatar */}
+                <div className="flex flex-col items-center gap-2">
+                  <div className="relative">
+                    <Avatar className="h-16 w-16 sm:h-20 sm:w-20">
+                      {previewImage && (
+                        <AvatarImage
+                          src={previewImage}
+                          alt={`${profile.firstName} ${profile.lastName}`}
+                        />
+                      )}
+                      <AvatarFallback className="bg-secondary text-secondary-foreground text-xl">
+                        {initials}
+                      </AvatarFallback>
+                    </Avatar>
+                    {uploading && (
+                      <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50">
+                        <Loader2 className="h-5 w-5 animate-spin text-white" />
+                      </div>
                     )}
-                    <AvatarFallback className="bg-secondary text-secondary-foreground text-xl">
-                      {initials}
-                    </AvatarFallback>
-                  </Avatar>
-                  {uploading && (
-                    <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50">
-                      <Loader2 className="h-5 w-5 animate-spin text-white" />
-                    </div>
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-1.5"
-                    disabled={uploading}
-                    onClick={() => fileRef.current?.click()}
-                  >
-                    <Camera className="h-3.5 w-3.5" />
-                    {previewImage ? "Change" : "Upload"} Photo
-                  </Button>
-                  {previewImage && (
+                  </div>
+                  <div className="flex gap-2">
                     <Button
                       variant="outline"
                       size="sm"
-                      className="gap-1.5 text-destructive hover:text-destructive"
+                      className="gap-1.5"
                       disabled={uploading}
-                      onClick={handleRemoveAvatar}
+                      onClick={() => fileRef.current?.click()}
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
-                      Remove
+                      <Camera className="h-3.5 w-3.5" />
+                      {previewImage ? "Change" : "Upload"} Photo
                     </Button>
-                  )}
+                    {previewImage && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-1.5 text-destructive hover:text-destructive"
+                        disabled={uploading}
+                        onClick={handleRemoveAvatar}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        Remove
+                      </Button>
+                    )}
+                  </div>
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    className="hidden"
+                    onChange={handleAvatarChange}
+                  />
                 </div>
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp,image/gif"
-                  className="hidden"
-                  onChange={handleAvatarChange}
-                />
-              </div>
 
-              {/* Read-only fields */}
-              <div className="grid grid-cols-2 gap-4">
+                {/* Read-only fields */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-muted-foreground text-xs">First Name</Label>
+                    <p className="text-sm font-medium">{profile.firstName}</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-muted-foreground text-xs">Last Name</Label>
+                    <p className="text-sm font-medium">{profile.lastName}</p>
+                  </div>
+                </div>
+
                 <div className="space-y-1.5">
-                  <Label className="text-muted-foreground text-xs">First Name</Label>
-                  <p className="text-sm font-medium">{profile.firstName}</p>
+                  <Label className="text-muted-foreground text-xs">Email</Label>
+                  <p className="text-sm font-medium">{profile.email}</p>
                 </div>
+
                 <div className="space-y-1.5">
-                  <Label className="text-muted-foreground text-xs">Last Name</Label>
-                  <p className="text-sm font-medium">{profile.lastName}</p>
+                  <Label className="text-muted-foreground text-xs">Role</Label>
+                  <p className="text-sm font-medium">{getRoleLabel(profile.role)}</p>
                 </div>
+
+                {/* Editable phone */}
+                <div className="space-y-1.5">
+                  <Label htmlFor="phone">Phone Number</Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    inputMode="numeric"
+                    placeholder="(555) 123-4567"
+                    value={formatPhone(phone)}
+                    onChange={handlePhoneInput}
+                    maxLength={14}
+                  />
+                  <p className="text-xs text-muted-foreground">US numbers only (10 digits)</p>
+                </div>
+
+                <Button onClick={handleSavePhone} disabled={saving} className="w-full">
+                  {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Save Changes
+                </Button>
+
+                <Button
+                  variant="destructive"
+                  className="w-full gap-2"
+                  onClick={() => setPwOpen(true)}
+                >
+                  <KeyRound className="h-4 w-4" />
+                  Change Password
+                </Button>
               </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-muted-foreground text-xs">Email</Label>
-                <p className="text-sm font-medium">{profile.email}</p>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-muted-foreground text-xs">Role</Label>
-                <p className="text-sm font-medium">{getRoleLabel(profile.role)}</p>
-              </div>
-
-              {/* Editable phone */}
-              <div className="space-y-1.5">
-                <Label htmlFor="phone">Phone Number</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  inputMode="numeric"
-                  placeholder="(555) 123-4567"
-                  value={formatPhone(phone)}
-                  onChange={handlePhoneInput}
-                  maxLength={14}
-                />
-                <p className="text-xs text-muted-foreground">US numbers only (10 digits)</p>
-              </div>
-
-              <Button onClick={handleSavePhone} disabled={saving} className="w-full">
-                {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Save Changes
-              </Button>
-
-              <Button
-                variant="destructive"
-                className="w-full gap-2"
-                onClick={() => setPwOpen(true)}
-              >
-                <KeyRound className="h-4 w-4" />
-                Change Password
-              </Button>
-            </div>
-          ) : null}
+            ) : null}
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -300,7 +302,7 @@ export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
           setPwOpen(v)
         }}
       >
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent className="sm:max-w-sm max-w-[calc(100%-2rem)]">
           <DialogHeader>
             <DialogTitle>Change Password</DialogTitle>
           </DialogHeader>

@@ -33,6 +33,17 @@ enum AuditAction {
   PASSWORD_RESET
 }
 
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  ORDERED
+  MONITORING
+  AWAITING_APPROVAL
+  APPROVED
+  PROJECTED
+  CLOSED
+}
+
 // ── better-auth required tables ─────────────────────────────────────────────
 
 model User {
@@ -63,6 +74,8 @@ model User {
   invitationsSent  Invitation[]   @relation("InvitationSentBy")
   createdBy        User?          @relation("CreatedBy", fields: [createdById], references: [id])
   createdUsers     User[]         @relation("CreatedBy")
+  ticketsCreated   Ticket[]       @relation("TicketCreator")
+  ticketHistory    TicketHistory[]
 }
 
 model Session {
@@ -108,12 +121,14 @@ model Verification {
 // ── Application tables ───────────────────────────────────────────────────────
 
 model Franchise {
-  id          String    @id @default(cuid())
-  name        String
-  createdById String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  id                      String    @id @default(cuid())
+  name                    String
+  maintenanceCostLimit    Decimal?  @db.Decimal(10, 2)
+  itCostLimit             Decimal?  @db.Decimal(10, 2)
+  createdById             String?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  deletedAt               DateTime?
 
   locations      Location[]
   userFranchises UserFranchise[]
@@ -134,6 +149,7 @@ model Location {
 
   userLocations UserLocation[]
   invitations   Invitation[]
+  tickets       Ticket[]
 }
 
 model UserFranchise {
@@ -195,4 +211,41 @@ model AuditLog {
   @@index([entityType, entityId])
   @@index([actorId])
   @@index([createdAt])
+}
+
+model Ticket {
+  id          String       @id @default(cuid())
+  type        Department
+  status      TicketStatus @default(OPEN)
+  issue       String
+  locationId  String
+  deadline    DateTime?
+  createdById String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  location  Location        @relation(fields: [locationId], references: [id])
+  createdBy User            @relation("TicketCreator", fields: [createdById], references: [id])
+  history   TicketHistory[]
+
+  @@index([locationId])
+  @@index([createdById])
+  @@index([status])
+}
+
+model TicketHistory {
+  id          String       @id @default(cuid())
+  ticketId    String
+  userId      String
+  comment     String?
+  attachment  String?
+  statusFrom  TicketStatus?
+  statusTo    TicketStatus?
+  cost        Decimal?     @db.Decimal(10, 2)
+  createdAt   DateTime     @default(now())
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@index([ticketId])
 }

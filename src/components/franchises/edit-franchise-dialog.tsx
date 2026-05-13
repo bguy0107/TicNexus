@@ -46,6 +46,8 @@ interface Location {
 interface FranchiseDetail {
   id: string
   name: string
+  maintenanceCostLimit: string | number | null
+  itCostLimit: string | number | null
   locations: Location[]
   userFranchises: { user: Manager }[]
 }
@@ -68,6 +70,8 @@ export function EditFranchiseDialog({
   const [loadingDetail, setLoadingDetail] = useState(false)
 
   const [name, setName] = useState("")
+  const [maintenanceCostLimit, setMaintenanceCostLimit] = useState("")
+  const [itCostLimit, setItCostLimit] = useState("")
   const [currentManagerIds, setCurrentManagerIds] = useState<string[]>([])
   const [currentLocationIds, setCurrentLocationIds] = useState<string[]>([])
 
@@ -86,7 +90,9 @@ export function EditFranchiseDialog({
   const { data: session } = useSession()
   const actorRole = (session?.user as { role?: Role })?.role ?? "STORE_USER"
   const canDelete = hasPermission(actorRole, "franchise:delete")
+  const canUpdate = hasPermission(actorRole, "franchise:update")
   const canRemoveLocations = actorRole === "ADMIN"
+  const canSetCostLimit = hasPermission(actorRole, "franchise:set_cost_limit")
 
   useEffect(() => {
     if (!open) return
@@ -100,6 +106,10 @@ export function EditFranchiseDialog({
     ]).then(([franchiseData, usersData]) => {
       setDetail(franchiseData)
       setName(franchiseData.name)
+      setMaintenanceCostLimit(
+        franchiseData.maintenanceCostLimit != null ? String(franchiseData.maintenanceCostLimit) : ""
+      )
+      setItCostLimit(franchiseData.itCostLimit != null ? String(franchiseData.itCostLimit) : "")
       setCurrentManagerIds(franchiseData.userFranchises.map((uf: { user: Manager }) => uf.user.id))
       setCurrentLocationIds(franchiseData.locations.map((l: Location) => l.id))
       setAllFMUsers(
@@ -176,6 +186,15 @@ export function EditFranchiseDialog({
 
     const body: Record<string, unknown> = {}
     if (name.trim() !== detail.name) body.name = name.trim()
+    const parsedMaintLimit =
+      maintenanceCostLimit.trim() !== "" ? parseFloat(maintenanceCostLimit) : null
+    const originalMaintLimit =
+      detail.maintenanceCostLimit != null ? Number(detail.maintenanceCostLimit) : null
+    if (parsedMaintLimit !== originalMaintLimit) body.maintenanceCostLimit = parsedMaintLimit
+
+    const parsedItLimit = itCostLimit.trim() !== "" ? parseFloat(itCostLimit) : null
+    const originalItLimit = detail.itCostLimit != null ? Number(detail.itCostLimit) : null
+    if (parsedItLimit !== originalItLimit) body.itCostLimit = parsedItLimit
     if (addManagerIds.length) body.addManagerIds = addManagerIds
     if (removeManagerIds.length) body.removeManagerIds = removeManagerIds
     if (removeLocationIds.length) body.removeLocationIds = removeLocationIds
@@ -241,8 +260,53 @@ export function EditFranchiseDialog({
             {/* Name */}
             <div className="space-y-2">
               <Label>Franchise name</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} />
+              {canUpdate ? (
+                <Input value={name} onChange={(e) => setName(e.target.value)} />
+              ) : (
+                <p className="text-sm py-2">{name}</p>
+              )}
             </div>
+
+            {canSetCostLimit && (
+              <>
+                <Separator />
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm font-medium mb-1">Supervisor approval cost limits</p>
+                    <p className="text-xs text-muted-foreground">
+                      Supervisors may only approve tickets whose cost is at or below the limit for
+                      that ticket type. Leave blank for no restriction.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="maintenance-cost-limit">Maintenance limit ($)</Label>
+                      <Input
+                        id="maintenance-cost-limit"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder="No limit"
+                        value={maintenanceCostLimit}
+                        onChange={(e) => setMaintenanceCostLimit(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="it-cost-limit">IT limit ($)</Label>
+                      <Input
+                        id="it-cost-limit"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder="No limit"
+                        value={itCostLimit}
+                        onChange={(e) => setItCostLimit(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
 
             <Separator />
 
@@ -256,20 +320,22 @@ export function EditFranchiseDialog({
                   currentManagers.map((m) => (
                     <Badge key={m.id} variant="secondary" className="gap-1 pr-1">
                       {m.firstName} {m.lastName}
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setCurrentManagerIds((prev) => prev.filter((id) => id !== m.id))
-                        }
-                        className="ml-1 rounded-sm hover:text-destructive"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
+                      {canUpdate && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setCurrentManagerIds((prev) => prev.filter((id) => id !== m.id))
+                          }
+                          className="ml-1 rounded-sm hover:text-destructive"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
                     </Badge>
                   ))
                 )}
               </div>
-              {availableFMUsers.length > 0 && (
+              {canUpdate && availableFMUsers.length > 0 && (
                 <Select
                   value=""
                   onValueChange={(id) => setCurrentManagerIds((prev) => [...prev, id])}

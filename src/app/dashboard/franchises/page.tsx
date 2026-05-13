@@ -2,7 +2,7 @@ import { requireRole } from "@/lib/session"
 import { FranchiseTable } from "@/components/franchises/franchise-table"
 
 export default async function FranchisesPage() {
-  await requireRole(["ADMIN", "TECHNICIAN"])
+  await requireRole(["ADMIN", "FRANCHISE_MANAGER", "TECHNICIAN"])
   return (
     <div className="space-y-6">
       <div>

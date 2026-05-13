@@ -30,7 +30,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useToast } from "@/components/ui/use-toast"
-import { formatDate } from "@/lib/utils"
+
 import { Plus, MoreHorizontal } from "lucide-react"
 import {
   DropdownMenu,
@@ -196,7 +196,6 @@ export function LocationTable() {
               <TableHead>Name</TableHead>
               <TableHead>Franchise</TableHead>
               <TableHead>Users</TableHead>
-              <TableHead>Created</TableHead>
               {isAdmin && <TableHead className="w-12" />}
             </TableRow>
           </TableHeader>
@@ -204,7 +203,7 @@ export function LocationTable() {
             {locations.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={isAdmin ? 6 : 5}
+                  colSpan={isAdmin ? 5 : 4}
                   className="text-center text-muted-foreground py-8"
                 >
                   No locations found
@@ -223,9 +222,6 @@ export function LocationTable() {
                   <TableCell className="font-medium">{l.name}</TableCell>
                   <TableCell className="text-muted-foreground">{l.franchise.name}</TableCell>
                   <TableCell>{l._count.userLocations}</TableCell>
-                  <TableCell className="text-muted-foreground text-sm">
-                    {formatDate(l.createdAt)}
-                  </TableCell>
                   {isAdmin && (
                     <TableCell onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>

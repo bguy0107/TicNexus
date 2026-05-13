@@ -158,7 +158,7 @@ Transactional email uses Nodemailer + Gmail App Passwords ([src/lib/email.ts](sr
 ### UI Components
 
 - Base primitives live in [src/components/ui/](src/components/ui/) — shadcn/ui components, do not modify directly.
-- Feature components live in [src/components/{users,franchises,locations}/](src/components/).
+- Feature components live in [src/components/{users,franchises,locations,tickets}/](src/components/).
 - Client components fetch data from the Next.js API routes via `fetch`; they are not Server Components.
 
 ### Database Schema Key Points
@@ -166,6 +166,7 @@ Transactional email uses Nodemailer + Gmail App Passwords ([src/lib/email.ts](sr
 - Users are soft-deleted (`deletedAt` nullable). All queries must filter `deletedAt: null` for active records.
 - `UserFranchise` and `UserLocation` are the many-to-many join tables for role-scoped assignments.
 - `Invitation` tokens expire in 48 hours; `acceptedAt` is set on acceptance.
+- `Franchise` has `maintenanceCostLimit` and `itCostLimit` (`Decimal?`) — per-department cost thresholds set by ADMIN or FRANCHISE_MANAGER via `franchise:set_cost_limit`.
 - Prisma migrations live in [prisma/migrations/](prisma/migrations/) and run automatically on container start via `migrate deploy`.
 
 ---
@@ -181,4 +182,24 @@ When a new sidebar navigation module is added, create a new branch (see Branchin
 - **UI components** — new component files and where they appear in the dashboard.
 - **Scope rules** — how data visibility is restricted by role for this module.
 
-_No additional modules have been added beyond the initial user/franchise/location system documented above._
+### Tickets (`feature/tickets` branch)
+
+- **Purpose** — IT and Maintenance ticket tracking tied to locations. All roles (including ADMIN) can create tickets. TECHNICIAN and above can update ticket status. Tickets follow an approval/cost workflow: moving to `AWAITING_APPROVAL` requires a cost estimate; FRANCHISE_MANAGER and ADMIN can then approve (`APPROVED`) or project (`PROJECTED`, requires a deadline). SUPERVISOR and above can override a projected ticket back to `APPROVED` via `ticket:override_projected`.
+- **Data model** — `Ticket` (type: `Department` enum IT|MAINTENANCE, status: `TicketStatus` enum OPEN|IN_PROGRESS|AWAITING_APPROVAL|APPROVED|PROJECTED|CLOSED, issue, locationId, deadline, createdById) and `TicketHistory` (comment, attachment path, statusFrom, statusTo, cost `Decimal?`, userId, ticketId). Uses the existing `Department` enum for ticket type.
+- **Permissions** — declared in [src/lib/permissions.ts](src/lib/permissions.ts):
+  - `ticket:read` — all roles.
+  - `ticket:create` — all roles.
+  - `ticket:update_status` — TECHNICIAN, SUPERVISOR, FRANCHISE_MANAGER, ADMIN.
+  - `ticket:update_deadline` — SUPERVISOR, FRANCHISE_MANAGER, ADMIN.
+  - `ticket:override_projected` — SUPERVISOR, FRANCHISE_MANAGER, ADMIN.
+  - `franchise:set_cost_limit` — FRANCHISE_MANAGER, ADMIN.
+- **API routes**:
+  - `GET /api/tickets` — list tickets (scoped), supports `?type=` and `?status=` filters.
+  - `POST /api/tickets` — create ticket (multipart/form-data, optional file attachment).
+  - `GET /api/tickets/[id]` — ticket detail with full history.
+  - `PATCH /api/tickets/[id]` — update status and/or deadline (JSON body: `{ status?, cost?, deadline?, comment? }`). `cost` is required when transitioning to `AWAITING_APPROVAL`; `deadline` is required when transitioning to `PROJECTED`.
+  - `POST /api/tickets/[id]/history` — add comment or file attachment (multipart/form-data).
+  - `GET /api/tickets/files?path=<relativePath>` — auth-gated file serving for attachments.
+- **UI components** — live in [src/components/tickets/](src/components/tickets/): `TicketList`, `CreateTicketDialog`, `TicketDetail`, `TicketStatusBadge`.
+- **Scope rules** — ADMIN sees all tickets globally. FRANCHISE_MANAGER sees tickets at locations in their franchises (via `UserFranchise`). SUPERVISOR/TECHNICIAN/STORE_USER see tickets at their assigned locations (via `UserLocation`). Scope helper `getTicketLocationIds` in [src/lib/scope.ts](src/lib/scope.ts) returns `null` for ADMIN (unrestricted) or a location ID list for all other roles.
+- **File uploads** — stored at `uploads/tickets/<ticketId>/<filename>` on the server (persisted via `ticket_uploads` Docker volume). Served via the auth-gated `/api/tickets/files` route; never publicly accessible.

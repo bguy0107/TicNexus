@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Users, Building2, MapPin, LayoutDashboard } from "lucide-react"
+import { Users, Building2, MapPin, LayoutDashboard, Ticket } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Role } from "@prisma/client"
 
@@ -23,13 +23,19 @@ export const navItems = [
     href: "/dashboard/franchises",
     label: "Franchises",
     icon: Building2,
-    roles: ["ADMIN", "TECHNICIAN"],
+    roles: ["ADMIN", "FRANCHISE_MANAGER", "TECHNICIAN"],
   },
   {
     href: "/dashboard/locations",
     label: "Locations",
     icon: MapPin,
     roles: ["ADMIN", "FRANCHISE_MANAGER", "SUPERVISOR", "TECHNICIAN"],
+  },
+  {
+    href: "/dashboard/tickets",
+    label: "Tickets",
+    icon: Ticket,
+    roles: ["ADMIN", "FRANCHISE_MANAGER", "SUPERVISOR", "TECHNICIAN", "STORE_USER"],
   },
 ] as const
 

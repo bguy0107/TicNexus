@@ -40,6 +40,8 @@ COPY --from=builder /app/tsconfig.json ./tsconfig.json
 COPY entrypoint.sh ./entrypoint.sh
 RUN chmod +x entrypoint.sh
 
+RUN mkdir -p /app/uploads/tickets && chown -R nextjs:nodejs /app/uploads
+
 USER nextjs
 EXPOSE 3000
 ENV PORT=3000

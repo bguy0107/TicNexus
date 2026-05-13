@@ -193,147 +193,41 @@ export function EditLocationDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-lg max-w-[calc(100%-2rem)] flex flex-col max-h-[90vh]">
           <DialogHeader>
             <DialogTitle>{isReadOnly ? location.name : `Edit ${location.name}`}</DialogTitle>
           </DialogHeader>
 
-          {loadingDetail ? (
-            <p className="text-sm text-muted-foreground py-4">Loading…</p>
-          ) : isReadOnly ? (
-            <div className="space-y-4 py-2">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">Location ID</Label>
-                  <p className="text-sm font-mono">{detail?.locationNumber || "—"}</p>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">Franchise</Label>
-                  <p className="text-sm">{detail?.franchise.name}</p>
-                </div>
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Name</Label>
-                <p className="text-sm">{detail?.name}</p>
-              </div>
-              {detail?.address && (
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">Address</Label>
-                  <p className="text-sm">{detail.address}</p>
-                </div>
-              )}
-              <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Assigned users</Label>
-                {detail && detail.userLocations.length > 0 ? (
-                  <div className="flex flex-wrap gap-2 mt-1">
-                    {detail.userLocations.map(({ user: u }) => (
-                      <Badge key={u.id} variant="secondary">
-                        {u.firstName} {u.lastName}
-                        <span className="ml-1 font-normal text-muted-foreground text-xs">
-                          {roleLabel(u.role)}
-                        </span>
-                      </Badge>
-                    ))}
+          <div className="overflow-y-auto flex-1 min-h-0 -mx-6 px-6">
+            {loadingDetail ? (
+              <p className="text-sm text-muted-foreground py-4">Loading…</p>
+            ) : isReadOnly ? (
+              <div className="space-y-4 py-2">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Location ID</Label>
+                    <p className="text-sm font-mono">{detail?.locationNumber || "—"}</p>
                   </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">No users assigned</p>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-6 py-2">
-              {/* Location ID — editable by admin only */}
-              <div className="space-y-2">
-                <Label>Location ID</Label>
-                {isAdmin ? (
-                  <Input
-                    value={locationNumber}
-                    onChange={(e) => setLocationNumber(e.target.value)}
-                    placeholder="e.g. 001"
-                    className="font-mono"
-                  />
-                ) : (
-                  <p className="text-sm font-mono text-muted-foreground">
-                    {detail?.locationNumber || "—"}
-                  </p>
-                )}
-              </div>
-
-              {/* Name — editable by FM + admin */}
-              <div className="space-y-2">
-                <Label>Name</Label>
-                {canEditLocation ? (
-                  <Input value={name} onChange={(e) => setName(e.target.value)} />
-                ) : (
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Franchise</Label>
+                    <p className="text-sm">{detail?.franchise.name}</p>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Name</Label>
                   <p className="text-sm">{detail?.name}</p>
+                </div>
+                {detail?.address && (
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Address</Label>
+                    <p className="text-sm">{detail.address}</p>
+                  </div>
                 )}
-              </div>
-
-              {/* Address — editable by FM + admin */}
-              <div className="space-y-2">
-                <Label>Address</Label>
-                {canEditLocation ? (
-                  <Input
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    placeholder="123 Main St"
-                  />
-                ) : (
-                  <p className="text-sm text-muted-foreground">{detail?.address || "—"}</p>
-                )}
-              </div>
-
-              <Separator />
-
-              {/* Franchise — editable by admin only */}
-              <div className="space-y-2">
-                <Label>Franchise</Label>
-                {isAdmin ? (
-                  <Select value={franchiseId} onValueChange={setFranchiseId}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {allFranchises.map((f) => (
-                        <SelectItem key={f.id} value={f.id}>
-                          {f.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <p className="text-sm">{detail?.franchise.name}</p>
-                )}
-              </div>
-
-              <Separator />
-
-              {/* User assignments */}
-              <div className="space-y-3">
-                <Label>Assigned users</Label>
-                <div className="flex flex-wrap gap-2 min-h-8">
-                  {assignedUsers.length === 0 && assignedOtherUsers.length === 0 ? (
-                    <span className="text-sm text-muted-foreground">No users assigned</span>
-                  ) : (
-                    <>
-                      {assignedUsers.map((u) => (
-                        <Badge key={u.id} variant="secondary" className="gap-1 pr-1">
-                          {u.firstName} {u.lastName}
-                          <span className="text-muted-foreground text-xs ml-1">
-                            {roleLabel(u.role)}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setCurrentUserIds((prev) => prev.filter((id) => id !== u.id))
-                            }
-                            className="ml-1 rounded-sm hover:text-destructive"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </Badge>
-                      ))}
-                      {assignedOtherUsers.map(({ user: u }) => (
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Assigned users</Label>
+                  {detail && detail.userLocations.length > 0 ? (
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      {detail.userLocations.map(({ user: u }) => (
                         <Badge key={u.id} variant="secondary">
                           {u.firstName} {u.lastName}
                           <span className="ml-1 font-normal text-muted-foreground text-xs">
@@ -341,41 +235,149 @@ export function EditLocationDialog({
                           </span>
                         </Badge>
                       ))}
-                    </>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No users assigned</p>
                   )}
                 </div>
-                {isAdmin ? (
-                  unassignedUsers.length > 0 && (
-                    <Select
-                      value=""
-                      onValueChange={(id) => setCurrentUserIds((prev) => [...prev, id])}
-                    >
-                      <SelectTrigger className="text-muted-foreground">
-                        <SelectValue placeholder="Add user…" />
+              </div>
+            ) : (
+              <div className="space-y-6 py-2">
+                {/* Location ID — editable by admin only */}
+                <div className="space-y-2">
+                  <Label>Location ID</Label>
+                  {isAdmin ? (
+                    <Input
+                      value={locationNumber}
+                      onChange={(e) => setLocationNumber(e.target.value)}
+                      placeholder="e.g. 001"
+                      className="font-mono"
+                    />
+                  ) : (
+                    <p className="text-sm font-mono text-muted-foreground">
+                      {detail?.locationNumber || "—"}
+                    </p>
+                  )}
+                </div>
+
+                {/* Name — editable by FM + admin */}
+                <div className="space-y-2">
+                  <Label>Name</Label>
+                  {canEditLocation ? (
+                    <Input value={name} onChange={(e) => setName(e.target.value)} />
+                  ) : (
+                    <p className="text-sm">{detail?.name}</p>
+                  )}
+                </div>
+
+                {/* Address — editable by FM + admin */}
+                <div className="space-y-2">
+                  <Label>Address</Label>
+                  {canEditLocation ? (
+                    <Input
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      placeholder="123 Main St"
+                    />
+                  ) : (
+                    <p className="text-sm text-muted-foreground">{detail?.address || "—"}</p>
+                  )}
+                </div>
+
+                <Separator />
+
+                {/* Franchise — editable by admin only */}
+                <div className="space-y-2">
+                  <Label>Franchise</Label>
+                  {isAdmin ? (
+                    <Select value={franchiseId} onValueChange={setFranchiseId}>
+                      <SelectTrigger>
+                        <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {unassignedUsers.map((u) => (
-                          <SelectItem key={u.id} value={u.id}>
-                            {u.firstName} {u.lastName}
-                            <span className="ml-2 text-muted-foreground text-xs">{u.email}</span>
+                        {allFranchises.map((f) => (
+                          <SelectItem key={f.id} value={f.id}>
+                            {f.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                  )
-                ) : (
-                  <Button
-                    type="button"
-                    size="sm"
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
-                    onClick={() => setShowAddUsers(true)}
-                  >
-                    Add Users To Location
-                  </Button>
-                )}
+                  ) : (
+                    <p className="text-sm">{detail?.franchise.name}</p>
+                  )}
+                </div>
+
+                <Separator />
+
+                {/* User assignments */}
+                <div className="space-y-3">
+                  <Label>Assigned users</Label>
+                  <div className="flex flex-wrap gap-2 min-h-8">
+                    {assignedUsers.length === 0 && assignedOtherUsers.length === 0 ? (
+                      <span className="text-sm text-muted-foreground">No users assigned</span>
+                    ) : (
+                      <>
+                        {assignedUsers.map((u) => (
+                          <Badge key={u.id} variant="secondary" className="gap-1 pr-1">
+                            {u.firstName} {u.lastName}
+                            <span className="text-muted-foreground text-xs ml-1">
+                              {roleLabel(u.role)}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setCurrentUserIds((prev) => prev.filter((id) => id !== u.id))
+                              }
+                              className="ml-1 rounded-sm hover:text-destructive"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </Badge>
+                        ))}
+                        {assignedOtherUsers.map(({ user: u }) => (
+                          <Badge key={u.id} variant="secondary">
+                            {u.firstName} {u.lastName}
+                            <span className="ml-1 font-normal text-muted-foreground text-xs">
+                              {roleLabel(u.role)}
+                            </span>
+                          </Badge>
+                        ))}
+                      </>
+                    )}
+                  </div>
+                  {isAdmin ? (
+                    unassignedUsers.length > 0 && (
+                      <Select
+                        value=""
+                        onValueChange={(id) => setCurrentUserIds((prev) => [...prev, id])}
+                      >
+                        <SelectTrigger className="text-muted-foreground">
+                          <SelectValue placeholder="Add user…" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {unassignedUsers.map((u) => (
+                            <SelectItem key={u.id} value={u.id}>
+                              {u.firstName} {u.lastName}
+                              <span className="ml-2 text-muted-foreground text-xs">{u.email}</span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )
+                  ) : (
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                      onClick={() => setShowAddUsers(true)}
+                    >
+                      Add Users To Location
+                    </Button>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
           <DialogFooter>
             {isReadOnly ? (

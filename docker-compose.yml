@@ -7,6 +7,8 @@ services:
       - .env
     environment:
       DATABASE_URL: ${DATABASE_URL}
+    volumes:
+      - ticket_uploads:/app/uploads/tickets
     depends_on:
       db:
         condition: service_healthy
@@ -29,3 +31,4 @@ services:
 
 volumes:
   postgres_data:
+  ticket_uploads:
