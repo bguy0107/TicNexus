@@ -1,0 +1,3 @@
+-- AlterEnum
+ALTER TYPE "TicketStatus" ADD VALUE 'ORDERED';
+ALTER TYPE "TicketStatus" ADD VALUE 'MONITORING';

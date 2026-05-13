@@ -20,13 +20,11 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Plus, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react"
-import { TicketStatusBadge } from "./ticket-status-badge"
+import { TicketStatusBadge, TicketDepartmentBadge } from "./ticket-status-badge"
 import { CreateTicketDialog } from "./create-ticket-dialog"
 import { formatDate } from "@/lib/utils"
 import { hasPermission } from "@/lib/permissions"
 import type { TicketWithDetails, Role, TicketStatus } from "@/types"
-
-const TYPE_LABELS = { IT: "IT", MAINTENANCE: "Maintenance" }
 
 type SortField = "status" | "location" | "createdAt" | "deadline" | "type"
 type SortOrder = "asc" | "desc"
@@ -130,6 +128,8 @@ export function TicketList() {
             <SelectItem value="ALL">All statuses</SelectItem>
             <SelectItem value="OPEN">Open</SelectItem>
             <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+            <SelectItem value="ORDERED">Ordered</SelectItem>
+            <SelectItem value="MONITORING">Monitoring</SelectItem>
             <SelectItem value="AWAITING_APPROVAL">Awaiting Approval</SelectItem>
             <SelectItem value="CLOSED">Closed</SelectItem>
           </SelectContent>
@@ -226,9 +226,7 @@ export function TicketList() {
                     {t.deadline ? formatDate(t.deadline) : "—"}
                   </TableCell>
                   <TableCell>
-                    <span className="text-xs font-mono font-medium text-muted-foreground uppercase">
-                      {TYPE_LABELS[t.type]}
-                    </span>
+                    <TicketDepartmentBadge department={t.type} />
                   </TableCell>
                 </TableRow>
               ))

@@ -90,6 +90,7 @@ export function EditFranchiseDialog({
   const { data: session } = useSession()
   const actorRole = (session?.user as { role?: Role })?.role ?? "STORE_USER"
   const canDelete = hasPermission(actorRole, "franchise:delete")
+  const canUpdate = hasPermission(actorRole, "franchise:update")
   const canRemoveLocations = actorRole === "ADMIN"
   const canSetCostLimit = hasPermission(actorRole, "franchise:set_cost_limit")
 
@@ -259,7 +260,11 @@ export function EditFranchiseDialog({
             {/* Name */}
             <div className="space-y-2">
               <Label>Franchise name</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} />
+              {canUpdate ? (
+                <Input value={name} onChange={(e) => setName(e.target.value)} />
+              ) : (
+                <p className="text-sm py-2">{name}</p>
+              )}
             </div>
 
             {canSetCostLimit && (
@@ -315,20 +320,22 @@ export function EditFranchiseDialog({
                   currentManagers.map((m) => (
                     <Badge key={m.id} variant="secondary" className="gap-1 pr-1">
                       {m.firstName} {m.lastName}
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setCurrentManagerIds((prev) => prev.filter((id) => id !== m.id))
-                        }
-                        className="ml-1 rounded-sm hover:text-destructive"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
+                      {canUpdate && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setCurrentManagerIds((prev) => prev.filter((id) => id !== m.id))
+                          }
+                          className="ml-1 rounded-sm hover:text-destructive"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
                     </Badge>
                   ))
                 )}
               </div>
-              {availableFMUsers.length > 0 && (
+              {canUpdate && availableFMUsers.length > 0 && (
                 <Select
                   value=""
                   onValueChange={(id) => setCurrentManagerIds((prev) => [...prev, id])}

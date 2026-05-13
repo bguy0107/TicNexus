@@ -49,7 +49,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 const patchSchema = z
   .object({
     status: z
-      .enum(["OPEN", "IN_PROGRESS", "AWAITING_APPROVAL", "APPROVED", "PROJECTED", "CLOSED"])
+      .enum([
+        "OPEN",
+        "IN_PROGRESS",
+        "ORDERED",
+        "MONITORING",
+        "AWAITING_APPROVAL",
+        "APPROVED",
+        "PROJECTED",
+        "CLOSED",
+      ])
       .optional(),
     comment: z.string().optional(),
     cost: z.number().positive().optional(),

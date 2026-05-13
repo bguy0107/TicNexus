@@ -23,7 +23,7 @@ export const navItems = [
     href: "/dashboard/franchises",
     label: "Franchises",
     icon: Building2,
-    roles: ["ADMIN", "TECHNICIAN"],
+    roles: ["ADMIN", "FRANCHISE_MANAGER", "TECHNICIAN"],
   },
   {
     href: "/dashboard/locations",

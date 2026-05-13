@@ -22,7 +22,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { useToast } from "@/components/ui/use-toast"
-import { TicketStatusBadge } from "./ticket-status-badge"
+import { TicketStatusBadge, TicketDepartmentBadge } from "./ticket-status-badge"
 import { UserRoleBadge } from "@/components/users/user-role-badge"
 import { formatDate, cn } from "@/lib/utils"
 import { hasPermission } from "@/lib/permissions"
@@ -33,13 +33,13 @@ import type { Role as PrismaRole } from "@prisma/client"
 const STATUS_OPTIONS: { value: TicketStatus; label: string }[] = [
   { value: "OPEN", label: "Open" },
   { value: "IN_PROGRESS", label: "In Progress" },
+  { value: "ORDERED", label: "Ordered" },
+  { value: "MONITORING", label: "Monitoring" },
   { value: "AWAITING_APPROVAL", label: "Awaiting Approval" },
   { value: "APPROVED", label: "Approved" },
   { value: "PROJECTED", label: "Projected" },
   { value: "CLOSED", label: "Closed" },
 ]
-
-const TYPE_LABELS = { IT: "IT", MAINTENANCE: "Maintenance" }
 
 interface TicketDetailProps {
   ticketId: string
@@ -71,6 +71,9 @@ export function TicketDetail({ ticketId }: TicketDetailProps) {
   const [changeDeadlineOpen, setChangeDeadlineOpen] = useState(false)
   const [newDeadline, setNewDeadline] = useState("")
   const [savingDeadline, setSavingDeadline] = useState(false)
+  const [statusCommentDialogOpen, setStatusCommentDialogOpen] = useState(false)
+  const [statusCommentPending, setStatusCommentPending] = useState<TicketStatus | null>(null)
+  const [statusComment, setStatusComment] = useState("")
 
   const actorRole = (session?.user as { role?: Role })?.role
   const actorId = session?.user?.id
@@ -147,9 +150,21 @@ export function TicketDetail({ ticketId }: TicketDetailProps) {
       setApprovalCost("")
       setApprovalComment("")
       setApprovalDialogOpen(true)
+    } else if (newStatus === "ORDERED" || newStatus === "MONITORING") {
+      setStatusComment("")
+      setStatusCommentPending(newStatus)
+      setStatusCommentDialogOpen(true)
     } else {
       submitStatusChange({ status: newStatus })
     }
+  }
+
+  const handleStatusCommentConfirm = async () => {
+    if (!statusCommentPending || !statusComment.trim()) return
+    setStatusCommentDialogOpen(false)
+    await submitStatusChange({ status: statusCommentPending, comment: statusComment.trim() })
+    setStatusCommentPending(null)
+    setStatusComment("")
   }
 
   const handleApprovalConfirm = async () => {
@@ -407,6 +422,45 @@ export function TicketDetail({ ticketId }: TicketDetailProps) {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={statusCommentDialogOpen} onOpenChange={setStatusCommentDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              Set status to {statusCommentPending === "ORDERED" ? "Ordered" : "Monitoring"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="status-comment">
+                Comment <span className="text-destructive">*</span>
+              </Label>
+              <textarea
+                id="status-comment"
+                className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+                placeholder={
+                  statusCommentPending === "ORDERED"
+                    ? "What was ordered and from where?"
+                    : "What is being monitored?"
+                }
+                value={statusComment}
+                onChange={(e) => setStatusComment(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setStatusCommentDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleStatusCommentConfirm}
+              disabled={updatingStatus || !statusComment.trim()}
+            >
+              {updatingStatus ? "Updating..." : "Confirm"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <div className="space-y-6 max-w-2xl">
         {/* Back */}
         <Button variant="ghost" size="sm" className="gap-1 -ml-1" onClick={() => router.back()}>
@@ -417,9 +471,7 @@ export function TicketDetail({ ticketId }: TicketDetailProps) {
         {/* Header */}
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-mono font-semibold text-muted-foreground uppercase tracking-wider">
-              {TYPE_LABELS[ticket.type]}
-            </span>
+            <TicketDepartmentBadge department={ticket.type} />
             <TicketStatusBadge status={ticket.status} />
           </div>
           <h1 className="text-xl font-bold leading-snug">{ticket.issue}</h1>

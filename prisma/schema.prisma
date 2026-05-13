@@ -36,6 +36,8 @@ enum AuditAction {
 enum TicketStatus {
   OPEN
   IN_PROGRESS
+  ORDERED
+  MONITORING
   AWAITING_APPROVAL
   APPROVED
   PROJECTED
