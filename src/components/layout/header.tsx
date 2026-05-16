@@ -49,7 +49,7 @@ export function Header({ firstName, lastName, email, role, image }: HeaderProps)
               <Menu className="h-5 w-5" />
             </button>
           </SheetTrigger>
-          <SheetContent side="left" className="w-64 p-0 bg-[#0a0a0a] border-r border-border">
+          <SheetContent side="left" className="w-64 p-0 bg-background border-r border-border">
             <SheetHeader className="h-16 flex justify-center px-6 border-b border-border">
               <SheetTitle className="text-foreground font-bold text-xl tracking-tight text-left">
                 TicNexus
