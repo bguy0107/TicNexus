@@ -62,5 +62,9 @@ export async function POST(request: NextRequest) {
     ipAddress: getIpFromRequest(request),
   })
 
-  return NextResponse.json({ success: true })
+  // Clear the Better-Auth session_data cache cookie so the next request re-reads
+  // mustChangePassword from the DB rather than returning the stale cached value.
+  const response = NextResponse.json({ success: true })
+  response.cookies.delete("better-auth.session_data")
+  return response
 }

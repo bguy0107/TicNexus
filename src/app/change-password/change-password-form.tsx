@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,7 +9,6 @@ import { useToast } from "@/components/ui/use-toast"
 import { KeyRound } from "lucide-react"
 
 export function ChangePasswordForm() {
-  const router = useRouter()
   const { toast } = useToast()
   const [form, setForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" })
   const [submitting, setSubmitting] = useState(false)
@@ -48,7 +46,7 @@ export function ChangePasswordForm() {
       return
     }
     toast({ title: "Password changed", description: "You can now access the dashboard." })
-    router.push("/dashboard")
+    window.location.href = "/dashboard"
   }
 
   return (
