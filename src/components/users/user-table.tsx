@@ -92,9 +92,9 @@ export function UserTable() {
                     <TableCell>
                       <div className="flex flex-col items-start gap-1">
                         <UserRoleBadge role={user.role} />
-                        {user.role === "TECHNICIAN" && user.department && (
+                        {user.role === "TECHNICIAN" && user.departments && user.departments.length > 0 && (
                           <span className="text-xs text-muted-foreground">
-                            {user.department === "IT" ? "IT" : "Maintenance"}
+                            {user.departments.map((d) => (d === "IT" ? "IT" : "Maintenance")).join(", ")}
                           </span>
                         )}
                       </div>

@@ -75,17 +75,17 @@ export function TicketList() {
   const [sortBy, setSortBy] = useState<SortField>("createdAt")
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc")
 
-  const actorRole = (session?.user as { role?: Role; department?: Department })?.role
-  const actorDepartment = (session?.user as { role?: Role; department?: Department })?.department
+  const actorRole = (session?.user as { role?: Role; departments?: Department[] })?.role
 
   const initialFilterApplied = useRef(false)
   useEffect(() => {
     if (initialFilterApplied.current || !session) return
     initialFilterApplied.current = true
-    if (actorRole === "TECHNICIAN" && actorDepartment) {
-      setTypeFilter(actorDepartment)
+    const depts = (session.user as { departments?: Department[] }).departments ?? []
+    if (actorRole === "TECHNICIAN" && depts.length === 1) {
+      setTypeFilter(depts[0])
     }
-  }, [session, actorRole, actorDepartment])
+  }, [session, actorRole])
 
   const canCreate = actorRole ? hasPermission(actorRole, "ticket:create") : false
 

@@ -10,7 +10,7 @@ const users = [
     email: "admin@ticnexus.com",
     password: "Admin1234!",
     role: "ADMIN" as const,
-    department: null,
+    departments: [] as const,
   },
   {
     firstName: "Franchise",
@@ -18,7 +18,7 @@ const users = [
     email: "franchise@ticnexus.com",
     password: "Manager1234!",
     role: "FRANCHISE_MANAGER" as const,
-    department: null,
+    departments: [] as const,
   },
   {
     firstName: "Franchise",
@@ -26,7 +26,7 @@ const users = [
     email: "franchise2@ticnexus.com",
     password: "Manager1234!",
     role: "FRANCHISE_MANAGER" as const,
-    department: null,
+    departments: [] as const,
   },
   {
     firstName: "Store",
@@ -34,7 +34,7 @@ const users = [
     email: "store@ticnexus.com",
     password: "StoreUser1234!",
     role: "STORE_USER" as const,
-    department: null,
+    departments: [] as const,
   },
   {
     firstName: "Supervisor",
@@ -42,7 +42,7 @@ const users = [
     email: "supervisor1@ticnexus.com",
     password: "Supervisor1234!",
     role: "SUPERVISOR" as const,
-    department: null,
+    departments: [] as const,
   },
   {
     firstName: "Supervisor",
@@ -50,7 +50,7 @@ const users = [
     email: "supervisor2@ticnexus.com",
     password: "Supervisor1234!",
     role: "SUPERVISOR" as const,
-    department: null,
+    departments: [] as const,
   },
   {
     firstName: "Technician",
@@ -58,7 +58,7 @@ const users = [
     email: "tech1@ticnexus.com",
     password: "Technician1234!",
     role: "TECHNICIAN" as const,
-    department: "IT" as const,
+    departments: ["IT"] as const,
   },
   {
     firstName: "Technician",
@@ -66,7 +66,7 @@ const users = [
     email: "tech2@ticnexus.com",
     password: "Technician1234!",
     role: "TECHNICIAN" as const,
-    department: "MAINTENANCE" as const,
+    departments: ["MAINTENANCE"] as const,
   },
 ]
 
@@ -111,10 +111,14 @@ async function seed() {
   for (const u of users) {
     const existing = await db.user.findUnique({ where: { email: u.email } })
     if (existing) {
-      // Update department if it changed (e.g. technicians added after initial seed)
-      if (u.department !== undefined && existing.department !== u.department) {
-        await db.user.update({ where: { id: existing.id }, data: { department: u.department } })
-        console.log(`  updated department   ${u.email} → ${u.department}`)
+      const existingDepts = existing.departments
+      const seedDepts = [...u.departments]
+      const deptsChanged =
+        existingDepts.length !== seedDepts.length ||
+        seedDepts.some((d) => !existingDepts.includes(d))
+      if (deptsChanged) {
+        await db.user.update({ where: { id: existing.id }, data: { departments: { set: seedDepts } } })
+        console.log(`  updated departments  ${u.email} → ${seedDepts.join(", ") || "none"}`)
       } else {
         console.log(`  skip  ${u.email} (already exists)`)
       }
@@ -134,7 +138,7 @@ async function seed() {
         firstName: u.firstName,
         lastName: u.lastName,
         role: u.role,
-        department: u.department,
+        departments: { set: [...u.departments] },
         createdAt: now,
         updatedAt: now,
       },

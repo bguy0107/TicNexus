@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
+import { Checkbox } from "@/components/ui/checkbox"
 
 import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/components/ui/use-toast"
@@ -92,7 +93,7 @@ export function EditUserDialog({
   const [firstName, setFirstName] = useState(user.firstName)
   const [lastName, setLastName] = useState(user.lastName)
   const [role, setRole] = useState<Role>(user.role)
-  const [department, setDepartment] = useState<Department | null>(user.department)
+  const [departments, setDepartments] = useState<Department[]>(user.departments ?? [])
   const [allFranchises, setAllFranchises] = useState<Franchise[]>([])
   const [allLocations, setAllLocations] = useState<Location[]>([])
   const [currentFranchiseIds, setCurrentFranchiseIds] = useState<string[]>([])
@@ -110,7 +111,7 @@ export function EditUserDialog({
     setFirstName(user.firstName)
     setLastName(user.lastName)
     setRole(user.role)
-    setDepartment(user.department)
+    setDepartments(user.departments ?? [])
     setShowDeactivateConfirm(false)
     setCurrentFranchiseIds(user.userFranchises.map((uf) => uf.franchise.id))
     setCurrentLocationIds(user.userLocations.map((ul) => ul.location.id))
@@ -140,7 +141,11 @@ export function EditUserDialog({
     if (firstName !== user.firstName) body.firstName = firstName
     if (lastName !== user.lastName) body.lastName = lastName
     if (role !== user.role) body.role = role
-    if (department !== user.department) body.department = department
+    const originalDepts = user.departments ?? []
+    const deptsChanged =
+      departments.length !== originalDepts.length ||
+      departments.some((d) => !originalDepts.includes(d))
+    if (deptsChanged) body.departments = departments
     if (addFranchiseIds.length) body.addFranchiseIds = addFranchiseIds
     if (removeFranchiseIds.length) body.removeFranchiseIds = removeFranchiseIds
     if (addLocationIds.length) body.addLocationIds = addLocationIds
@@ -255,10 +260,12 @@ export function EditUserDialog({
                   {ALL_ROLES.find((r) => r.value === user.role)?.label ?? user.role}
                 </p>
               </div>
-              {user.role === "TECHNICIAN" && user.department && (
+              {user.role === "TECHNICIAN" && user.departments && user.departments.length > 0 && (
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Department</Label>
-                  <p className="text-sm">{user.department === "IT" ? "IT" : "Maintenance"}</p>
+                  <p className="text-sm">
+                    {user.departments.map((d) => (d === "IT" ? "IT" : "Maintenance")).join(", ")}
+                  </p>
                 </div>
               )}
               {user.userFranchises.length > 0 && (
@@ -323,18 +330,21 @@ export function EditUserDialog({
               {role === "TECHNICIAN" && (
                 <div className="space-y-2">
                   <Label>Department</Label>
-                  <Select
-                    value={department ?? ""}
-                    onValueChange={(v) => setDepartment(v as Department)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select department" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="IT">IT</SelectItem>
-                      <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="flex gap-6">
+                    {(["IT", "MAINTENANCE"] as Department[]).map((dept) => (
+                      <label key={dept} className="flex items-center gap-2 cursor-pointer">
+                        <Checkbox
+                          checked={departments.includes(dept)}
+                          onCheckedChange={(checked) =>
+                            setDepartments((prev) =>
+                              checked ? [...prev, dept] : prev.filter((d) => d !== dept)
+                            )
+                          }
+                        />
+                        <span className="text-sm">{dept === "IT" ? "IT" : "Maintenance"}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
               )}
 

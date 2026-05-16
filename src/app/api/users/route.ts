@@ -87,7 +87,7 @@ const userSelect = {
   name: true,
   email: true,
   role: true,
-  department: true,
+  departments: true,
   createdAt: true,
   deletedAt: true,
   userFranchises: {
@@ -107,7 +107,7 @@ const createUserSchema = z.object({
   lastName: z.string().min(1, "Last name is required"),
   role: z.enum(["ADMIN", "FRANCHISE_MANAGER", "SUPERVISOR", "TECHNICIAN", "STORE_USER"]),
   password: z.string().min(8, "Password must be at least 8 characters"),
-  department: z.enum(["IT", "MAINTENANCE"]).optional(),
+  department: z.enum(["IT", "MAINTENANCE"]).optional(), // single dept from create form; stored as array
   franchiseId: z.string().optional(),
   locationId: z.string().optional(),
 })
@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
         where: { id: userId },
         data: {
           role: role as Role,
-          department: department ? (department as Department) : undefined,
+          departments: department ? [department as Department] : [],
           emailVerified: true,
           firstName,
           lastName,
@@ -191,7 +191,7 @@ export async function POST(request: NextRequest) {
       firstName,
       lastName,
       role,
-      ...(department && { department }),
+      ...(department && { departments: [department] }),
       ...(franchiseId && { franchiseId }),
       ...(locationId && { locationId }),
     },

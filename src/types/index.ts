@@ -9,7 +9,7 @@ export interface UserWithRelations {
   name: string
   email: string
   role: Role
-  department: Department | null
+  departments: Department[]
   createdAt: Date | string
   deletedAt: Date | string | null
   userFranchises: Array<{

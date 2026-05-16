@@ -20,7 +20,7 @@ const userSelect = {
   name: true,
   email: true,
   role: true,
-  department: true,
+  departments: true,
   createdAt: true,
   deletedAt: true,
   userFranchises: { select: { franchise: { select: { id: true, name: true } } } },
@@ -97,7 +97,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     firstName,
     lastName,
     role,
-    department,
+    departments,
     addLocationIds,
     removeLocationIds,
     addFranchiseIds,
@@ -106,18 +106,21 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
   const effectiveRole: Role = role !== undefined ? (role as Role) : (target.role as Role)
   if (effectiveRole === "TECHNICIAN") {
-    const effectiveDept = department ?? target.department
-    if (!effectiveDept) {
+    const effectiveDepts: Department[] = departments !== undefined ? departments : target.departments
+    if (!effectiveDepts || effectiveDepts.length === 0) {
       return NextResponse.json(
-        { error: "Department is required for Technician users" },
+        { error: "At least one department is required for Technician users" },
         { status: 400 }
       )
     }
   }
 
   const validDepartments: Department[] = ["IT", "MAINTENANCE"]
-  if (department !== undefined && !validDepartments.includes(department as Department)) {
-    return NextResponse.json({ error: "Invalid department" }, { status: 400 })
+  if (departments !== undefined) {
+    const invalid = (departments as string[]).filter((d) => !validDepartments.includes(d as Department))
+    if (invalid.length > 0) {
+      return NextResponse.json({ error: "Invalid department value" }, { status: 400 })
+    }
   }
 
   if (role !== undefined && role !== target.role) {
@@ -249,10 +252,16 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     after.role = role
     userUpdates.role = role
   }
-  if (department !== undefined && department !== target.department) {
-    before.department = target.department
-    after.department = department
-    userUpdates.department = department
+  if (departments !== undefined) {
+    const prev = target.departments as Department[]
+    const next = departments as Department[]
+    const changed =
+      prev.length !== next.length || prev.some((d) => !next.includes(d))
+    if (changed) {
+      before.departments = prev
+      after.departments = next
+      userUpdates.departments = next
+    }
   }
 
   await db.$transaction(async (tx) => {
