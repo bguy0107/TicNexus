@@ -127,13 +127,14 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
   // ── Deadline-only update (no status change) ───────────────────────────────
   if (!newStatus && deadline) {
-    if (ticket.status !== "PROJECTED") {
+    if (ticket.status === "CLOSED") {
       return NextResponse.json(
-        { error: "Deadline can only be changed on Projected tickets" },
+        { error: "Cannot update deadline on a closed ticket" },
         { status: 400 }
       )
     }
-    if (!hasPermission(role, "ticket:update_deadline")) {
+    const isCreatorForDeadline = ticket.createdById === session.user.id
+    if (!hasPermission(role, "ticket:update_deadline") && !isCreatorForDeadline) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 

@@ -106,6 +106,10 @@ export function TicketDetail({ ticketId }: TicketDetailProps) {
     isProjected &&
     (actorRole === "ADMIN" || actorRole === "FRANCHISE_MANAGER" || actorRole === "SUPERVISOR")
 
+  const canAdjustDeadline =
+    ticket?.status !== "CLOSED" &&
+    ((actorRole ? hasPermission(actorRole, "ticket:update_deadline") : false) || !!isCreator)
+
   const fetchTicket = useCallback(async () => {
     const res = await fetch(`/api/tickets/${ticketId}`)
     if (!res.ok) {
@@ -498,6 +502,21 @@ export function TicketDetail({ ticketId }: TicketDetailProps) {
           <div>
             <p className="text-muted-foreground text-xs mb-1">Deadline</p>
             <p>{ticket.deadline ? formatDate(ticket.deadline) : "—"}</p>
+            {canAdjustDeadline && (
+              <Button
+                size="sm"
+                className="mt-1.5 h-7 px-2 text-xs bg-blue-600 hover:bg-blue-700 text-white"
+                onClick={() => {
+                  setNewDeadline(
+                    ticket.deadline ? new Date(ticket.deadline).toISOString().split("T")[0] : ""
+                  )
+                  setChangeDeadlineOpen(true)
+                }}
+                disabled={savingDeadline}
+              >
+                Adjust Deadline
+              </Button>
+            )}
           </div>
         </div>
 
