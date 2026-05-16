@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useRef } from "react"
 import { useSession } from "@/lib/auth-client"
 import { useRouter } from "next/navigation"
 import {
@@ -24,7 +24,7 @@ import { TicketStatusBadge, TicketDepartmentBadge } from "./ticket-status-badge"
 import { CreateTicketDialog } from "./create-ticket-dialog"
 import { formatDate } from "@/lib/utils"
 import { hasPermission } from "@/lib/permissions"
-import type { TicketWithDetails, Role, TicketStatus } from "@/types"
+import type { TicketWithDetails, Role, TicketStatus, Department } from "@/types"
 
 type SortField = "status" | "location" | "createdAt" | "deadline" | "type"
 type SortOrder = "asc" | "desc"
@@ -75,7 +75,17 @@ export function TicketList() {
   const [sortBy, setSortBy] = useState<SortField>("createdAt")
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc")
 
-  const actorRole = (session?.user as { role?: Role })?.role
+  const actorRole = (session?.user as { role?: Role; department?: Department })?.role
+  const actorDepartment = (session?.user as { role?: Role; department?: Department })?.department
+
+  const initialFilterApplied = useRef(false)
+  useEffect(() => {
+    if (initialFilterApplied.current || !session) return
+    initialFilterApplied.current = true
+    if (actorRole === "TECHNICIAN" && actorDepartment) {
+      setTypeFilter(actorDepartment)
+    }
+  }, [session, actorRole, actorDepartment])
 
   const canCreate = actorRole ? hasPermission(actorRole, "ticket:create") : false
 

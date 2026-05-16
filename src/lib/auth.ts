@@ -36,6 +36,7 @@ export const auth = betterAuth({
       deletedAt: { type: "date", required: false },
       createdById: { type: "string", required: false },
       mustChangePassword: { type: "boolean", required: false, defaultValue: false },
+      department: { type: "string", required: false },
     },
   },
   advanced: {
