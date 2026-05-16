@@ -27,26 +27,35 @@ export function ChangePasswordForm() {
       return
     }
     setSubmitting(true)
-    const res = await fetch("/api/users/me/change-password", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        currentPassword: form.currentPassword,
-        newPassword: form.newPassword,
-      }),
-    })
-    const data = await res.json()
-    if (!res.ok) {
+    try {
+      const res = await fetch("/api/users/me/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          currentPassword: form.currentPassword,
+          newPassword: form.newPassword,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        toast({
+          title: "Error",
+          description: data.error ?? "Could not change password",
+          variant: "destructive",
+        })
+        setSubmitting(false)
+        return
+      }
+      toast({ title: "Password changed", description: "You can now access the dashboard." })
+      window.location.href = "/dashboard"
+    } catch (err) {
       toast({
         title: "Error",
-        description: data.error ?? "Could not change password",
+        description: err instanceof Error ? err.message : "An unexpected error occurred",
         variant: "destructive",
       })
       setSubmitting(false)
-      return
     }
-    toast({ title: "Password changed", description: "You can now access the dashboard." })
-    window.location.href = "/dashboard"
   }
 
   return (
