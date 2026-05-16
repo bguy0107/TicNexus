@@ -250,7 +250,7 @@ export function EditFranchiseDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Edit {franchise.name}</DialogTitle>
+          <DialogTitle>{canUpdate || canSetCostLimit ? "Edit" : "View"} {franchise.name}</DialogTitle>
         </DialogHeader>
 
         {loadingDetail ? (
@@ -524,11 +524,13 @@ export function EditFranchiseDialog({
           {deleteStep === 0 && (
             <div className="flex items-center gap-2">
               <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
-                Cancel
+                {canUpdate || canSetCostLimit ? "Cancel" : "Close"}
               </Button>
-              <Button onClick={handleSave} disabled={saving || loadingDetail}>
-                {saving ? "Saving…" : "Save changes"}
-              </Button>
+              {(canUpdate || canSetCostLimit) && (
+                <Button onClick={handleSave} disabled={saving || loadingDetail}>
+                  {saving ? "Saving…" : "Save changes"}
+                </Button>
+              )}
             </div>
           )}
         </DialogFooter>
