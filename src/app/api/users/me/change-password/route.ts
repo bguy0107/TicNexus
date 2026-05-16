@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Account not found" }, { status: 404 })
     }
 
-    const isValid = await verifyPassword(currentPassword, account.password)
+    const isValid = await verifyPassword(account.password, currentPassword)
     if (!isValid) {
       return NextResponse.json({ error: "Current password is incorrect" }, { status: 400 })
     }
