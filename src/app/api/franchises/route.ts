@@ -47,16 +47,17 @@ export async function GET(request: NextRequest) {
 
     const uls = await db.userLocation.findMany({
       where: { userId },
-      include: { location: { include: { franchise: true } } },
+      select: { location: { select: { franchiseId: true } } },
     })
-    const seen = new Set<string>()
-    const franchises = uls
-      .map((ul) => ul.location.franchise)
-      .filter((f) => {
-        if (seen.has(f.id)) return false
-        seen.add(f.id)
-        return !f.deletedAt
-      })
+    const franchiseIds = [...new Set(uls.map((ul) => ul.location.franchiseId))]
+    if (franchiseIds.length === 0) return NextResponse.json({ franchises: [] })
+    const franchises = await db.franchise.findMany({
+      where: { id: { in: franchiseIds }, deletedAt: null },
+      include: {
+        _count: { select: { locations: locationCountFilter, userFranchises: true } },
+      },
+      orderBy: { name: "asc" },
+    })
     return NextResponse.json({ franchises })
   }
 
