@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { Camera, KeyRound, Loader2, Trash2 } from "lucide-react"
+import { Camera, KeyRound, Loader2, Moon, Sun, Trash2 } from "lucide-react"
+import { useTheme } from "@/components/theme-provider"
 import {
   Dialog,
   DialogContent,
@@ -45,6 +46,7 @@ const emptyPwForm = { current: "", next: "", confirm: "" }
 
 export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
   const { toast } = useToast()
+  const { theme, setTheme } = useTheme()
   const [profile, setProfile] = useState<ProfileData | null>(null)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -273,6 +275,31 @@ export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
                     maxLength={14}
                   />
                   <p className="text-xs text-muted-foreground">US numbers only (10 digits)</p>
+                </div>
+
+                {/* Appearance */}
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm">Appearance</Label>
+                  <div className="flex items-center gap-1 rounded-md border p-1">
+                    <Button
+                      variant={theme === "light" ? "secondary" : "ghost"}
+                      size="sm"
+                      className="h-7 gap-1.5 px-2 text-xs"
+                      onClick={() => setTheme("light")}
+                    >
+                      <Sun className="h-3.5 w-3.5" />
+                      Light
+                    </Button>
+                    <Button
+                      variant={theme === "dark" ? "secondary" : "ghost"}
+                      size="sm"
+                      className="h-7 gap-1.5 px-2 text-xs"
+                      onClick={() => setTheme("dark")}
+                    >
+                      <Moon className="h-3.5 w-3.5" />
+                      Dark
+                    </Button>
+                  </div>
                 </div>
 
                 <Button onClick={handleSavePhone} disabled={saving} className="w-full">
