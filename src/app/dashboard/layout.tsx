@@ -2,12 +2,19 @@ import { requireAuth } from "@/lib/session"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { redirect } from "next/navigation"
+import { db } from "@/lib/db"
 import type { Role } from "@prisma/client"
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await requireAuth()
 
-  if (session.user.mustChangePassword) {
+  // Read mustChangePassword from the DB directly so a stale Better-Auth
+  // session cookie cache can never block access after the password was changed.
+  const dbUser = await db.user.findUnique({
+    where: { id: session.user.id },
+    select: { mustChangePassword: true },
+  })
+  if (dbUser?.mustChangePassword) {
     redirect("/change-password")
   }
 
