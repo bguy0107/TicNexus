@@ -54,6 +54,15 @@ export async function getTicketLocationIds(userId: string, role: string): Promis
   return getSupervisorLocationIds(userId)
 }
 
+export async function getFootageLocationIds(
+  userId: string,
+  role: string
+): Promise<string[] | null> {
+  if (role === "ADMIN") return null // null means unrestricted
+  if (role === "FRANCHISE_MANAGER") return getFranchiseMgrLocationIds(userId)
+  return getSupervisorLocationIds(userId)
+}
+
 // Works for SUPERVISOR, TECHNICIAN, and STORE_USER — any role with userLocation assignments
 export async function isTargetInLocationScope(
   actorId: string,

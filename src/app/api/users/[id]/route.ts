@@ -106,7 +106,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
   const effectiveRole: Role = role !== undefined ? (role as Role) : (target.role as Role)
   if (effectiveRole === "TECHNICIAN") {
-    const effectiveDepts: Department[] = departments !== undefined ? departments : target.departments
+    const effectiveDepts: Department[] =
+      departments !== undefined ? departments : target.departments
     if (!effectiveDepts || effectiveDepts.length === 0) {
       return NextResponse.json(
         { error: "At least one department is required for Technician users" },
@@ -117,7 +118,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
   const validDepartments: Department[] = ["IT", "MAINTENANCE"]
   if (departments !== undefined) {
-    const invalid = (departments as string[]).filter((d) => !validDepartments.includes(d as Department))
+    const invalid = (departments as string[]).filter(
+      (d) => !validDepartments.includes(d as Department)
+    )
     if (invalid.length > 0) {
       return NextResponse.json({ error: "Invalid department value" }, { status: 400 })
     }
@@ -255,8 +258,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if (departments !== undefined) {
     const prev = target.departments as Department[]
     const next = departments as Department[]
-    const changed =
-      prev.length !== next.length || prev.some((d) => !next.includes(d))
+    const changed = prev.length !== next.length || prev.some((d) => !next.includes(d))
     if (changed) {
       before.departments = prev
       after.departments = next

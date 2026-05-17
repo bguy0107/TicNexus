@@ -38,6 +38,9 @@ type Permission =
   | "ticket:update_deadline"
   | "ticket:override_projected"
   | "franchise:set_cost_limit"
+  | "footage:read"
+  | "footage:create"
+  | "footage:resolve"
 
 const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
   ADMIN: [
@@ -71,6 +74,9 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "ticket:update_deadline",
     "ticket:override_projected",
     "franchise:set_cost_limit",
+    "footage:read",
+    "footage:create",
+    "footage:resolve",
   ],
   FRANCHISE_MANAGER: [
     "franchise:read:own",
@@ -95,6 +101,9 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "ticket:update_deadline",
     "ticket:override_projected",
     "franchise:set_cost_limit",
+    "footage:read",
+    "footage:create",
+    "footage:resolve",
   ],
   SUPERVISOR: [
     "franchise:read:own",
@@ -112,6 +121,9 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "ticket:update_status",
     "ticket:update_deadline",
     "ticket:override_projected",
+    "footage:read",
+    "footage:create",
+    "footage:resolve",
   ],
   TECHNICIAN: [
     "franchise:read:own",
@@ -120,8 +132,18 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "ticket:read",
     "ticket:create",
     "ticket:update_status",
+    "footage:read",
+    "footage:create",
+    "footage:resolve",
   ],
-  STORE_USER: ["location:read:own", "user:read:location", "ticket:read", "ticket:create"],
+  STORE_USER: [
+    "location:read:own",
+    "user:read:location",
+    "ticket:read",
+    "ticket:create",
+    "footage:read",
+    "footage:create",
+  ],
 }
 
 export function hasPermission(role: Role, permission: Permission): boolean {

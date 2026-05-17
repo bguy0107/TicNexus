@@ -250,7 +250,9 @@ export function EditFranchiseDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{canUpdate || canSetCostLimit ? "Edit" : "View"} {franchise.name}</DialogTitle>
+          <DialogTitle>
+            {canUpdate || canSetCostLimit ? "Edit" : "View"} {franchise.name}
+          </DialogTitle>
         </DialogHeader>
 
         {loadingDetail ? (

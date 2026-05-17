@@ -44,6 +44,17 @@ enum TicketStatus {
   CLOSED
 }
 
+enum FootageRequestStatus {
+  PENDING
+  FULFILLED
+  DENIED
+}
+
+enum RequestingParty {
+  LAW_ENFORCEMENT
+  INTERNAL
+}
+
 // ── better-auth required tables ─────────────────────────────────────────────
 
 model User {
@@ -74,8 +85,10 @@ model User {
   invitationsSent  Invitation[]   @relation("InvitationSentBy")
   createdBy        User?          @relation("CreatedBy", fields: [createdById], references: [id])
   createdUsers     User[]         @relation("CreatedBy")
-  ticketsCreated   Ticket[]       @relation("TicketCreator")
-  ticketHistory    TicketHistory[]
+  ticketsCreated         Ticket[]         @relation("TicketCreator")
+  ticketHistory          TicketHistory[]
+  footageRequestsCreated FootageRequest[] @relation("FootageRequestCreator")
+  footageRequestsResolved FootageRequest[] @relation("FootageRequestResolver")
 }
 
 model Session {
@@ -147,9 +160,10 @@ model Location {
   updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
 
-  userLocations UserLocation[]
-  invitations   Invitation[]
-  tickets       Ticket[]
+  userLocations   UserLocation[]
+  invitations     Invitation[]
+  tickets         Ticket[]
+  footageRequests FootageRequest[]
 }
 
 model UserFranchise {
@@ -248,4 +262,29 @@ model TicketHistory {
   user   User   @relation(fields: [userId], references: [id])
 
   @@index([ticketId])
+}
+
+model FootageRequest {
+  id              String               @id @default(cuid())
+  locationId      String
+  startDateTime   DateTime
+  endDateTime     DateTime
+  cameraArea      String
+  requestingParty RequestingParty
+  officerName     String?
+  status          FootageRequestStatus @default(PENDING)
+  resolutionNote  String?
+  resolvedById    String?
+  resolvedAt      DateTime?
+  createdById     String
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  location   Location @relation(fields: [locationId], references: [id])
+  createdBy  User     @relation("FootageRequestCreator", fields: [createdById], references: [id])
+  resolvedBy User?    @relation("FootageRequestResolver", fields: [resolvedById], references: [id])
+
+  @@index([locationId])
+  @@index([createdById])
+  @@index([status])
 }

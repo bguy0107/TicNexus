@@ -31,7 +31,9 @@ npm run db:studio            # Open Prisma Studio GUI
 npm run db:seed              # Seed the DB with test users, franchises, and locations
 ```
 
-**Local environment:** Copy `.env.example` to `.env` and fill in all values. Run `docker compose up -d` to start PostgreSQL (the `db` service only). The app can then be run locally with `npm run dev` pointing at the Dockerized database. The `DATABASE_URL` in `.env` must use `localhost` as the host when running the app outside Docker.
+**Local environment:** Use `npm run dev:local` — it handles everything automatically: creates `.env` from `.env.local.example` if missing, kills any process on port 3000, starts the DB container, waits for it to be healthy, applies pending migrations, ensures the admin account exists, then launches the dev server. Only Docker Desktop needs to be running first.
+
+For manual setup: copy `.env.local.example` to `.env` (not `.env.example` — that one uses `db` as the host for Docker networking). The `DATABASE_URL` must use `localhost` when the app runs outside Docker.
 
 **First-run setup:** The admin account (`admin@ticnexus.com` / `Admin1234!`) is created automatically by `prisma/init-admin.ts` on every container startup. No manual setup step is required.
 
@@ -203,3 +205,19 @@ When a new sidebar navigation module is added, create a new branch (see Branchin
 - **UI components** — live in [src/components/tickets/](src/components/tickets/): `TicketList`, `CreateTicketDialog`, `TicketDetail`, `TicketStatusBadge`.
 - **Scope rules** — ADMIN sees all tickets globally. FRANCHISE_MANAGER sees tickets at locations in their franchises (via `UserFranchise`). SUPERVISOR/TECHNICIAN/STORE_USER see tickets at their assigned locations (via `UserLocation`). Scope helper `getTicketLocationIds` in [src/lib/scope.ts](src/lib/scope.ts) returns `null` for ADMIN (unrestricted) or a location ID list for all other roles.
 - **File uploads** — stored at `uploads/tickets/<ticketId>/<filename>` on the server (persisted via `ticket_uploads` Docker volume). Served via the auth-gated `/api/tickets/files` route; never publicly accessible.
+
+### Footage Requests (`feature/footage-requests` branch)
+
+- **Purpose** — Video footage requests tied to locations. Any role can submit a request; TECHNICIAN, SUPERVISOR, FRANCHISE_MANAGER, and ADMIN can fulfill or deny. STORE_USER can only submit.
+- **Data model** — `FootageRequest` (status: `FootageRequestStatus` enum PENDING|FULFILLED|DENIED, requestingParty: `RequestingParty` enum LAW_ENFORCEMENT|INTERNAL, locationId, startDateTime, endDateTime, cameraArea, officerName `String?`, resolutionNote `String?`, resolvedById, resolvedAt, createdById). No history table — resolution is a single status flip with an optional note stored on the record.
+- **Permissions** — declared in [src/lib/permissions.ts](src/lib/permissions.ts):
+  - `footage:read` — all roles.
+  - `footage:create` — all roles.
+  - `footage:resolve` — TECHNICIAN, SUPERVISOR, FRANCHISE_MANAGER, ADMIN.
+- **API routes**:
+  - `GET /api/footage-requests` — list (scoped), supports `?status=` filter.
+  - `POST /api/footage-requests` — create request (JSON body: `{ locationId, startDateTime, endDateTime, cameraArea, requestingParty, officerName? }`). `officerName` is required when `requestingParty` is `LAW_ENFORCEMENT`.
+  - `GET /api/footage-requests/[id]` — request detail.
+  - `PATCH /api/footage-requests/[id]` — fulfill or deny (JSON body: `{ status: "FULFILLED"|"DENIED", resolutionNote? }`). Only allowed when status is PENDING.
+- **UI components** — live in [src/components/footage-requests/](src/components/footage-requests/): `FootageRequestList`, `CreateFootageRequestDialog`, `FootageRequestDetail`, `FootageRequestStatusBadge`, `FootageRequestPartyBadge`.
+- **Scope rules** — ADMIN sees all requests globally. FRANCHISE_MANAGER sees requests at locations in their franchises. SUPERVISOR/TECHNICIAN/STORE_USER see requests at their assigned locations. Scope helper `getFootageLocationIds` in [src/lib/scope.ts](src/lib/scope.ts) returns `null` for ADMIN (unrestricted) or a location ID list for all other roles. Resolve permission is also scope-gated.

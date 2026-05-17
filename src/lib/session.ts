@@ -1,12 +1,13 @@
 import { auth } from "./auth"
 import { headers } from "next/headers"
 import { redirect } from "next/navigation"
-import type { Role } from "@prisma/client"
+import type { Role, Department } from "@prisma/client"
 
 // better-auth's $Infer.Session.user omits additionalFields at the TS level,
 // so we extend it manually to include the fields defined in auth.ts.
 type FullUser = typeof auth.$Infer.Session.user & {
   role: Role
+  departments: Department[]
   firstName: string
   lastName: string
   image?: string | null
