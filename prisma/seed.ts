@@ -117,7 +117,10 @@ async function seed() {
         existingDepts.length !== seedDepts.length ||
         seedDepts.some((d) => !existingDepts.includes(d))
       if (deptsChanged) {
-        await db.user.update({ where: { id: existing.id }, data: { departments: { set: seedDepts } } })
+        await db.user.update({
+          where: { id: existing.id },
+          data: { departments: { set: seedDepts } },
+        })
         console.log(`  updated departments  ${u.email} → ${seedDepts.join(", ") || "none"}`)
       } else {
         console.log(`  skip  ${u.email} (already exists)`)

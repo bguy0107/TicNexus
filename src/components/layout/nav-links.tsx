@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Users, Building2, MapPin, LayoutDashboard, Ticket } from "lucide-react"
+import { Users, Building2, MapPin, LayoutDashboard, Ticket, Video } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Role } from "@prisma/client"
 
@@ -37,6 +37,12 @@ export const navItems = [
     icon: Ticket,
     roles: ["ADMIN", "FRANCHISE_MANAGER", "SUPERVISOR", "TECHNICIAN", "STORE_USER"],
   },
+  {
+    href: "/dashboard/footage-requests",
+    label: "Footage Requests",
+    icon: Video,
+    roles: ["ADMIN", "FRANCHISE_MANAGER", "SUPERVISOR", "TECHNICIAN", "STORE_USER"],
+  },
 ] as const
 
 interface NavLinksProps {
@@ -55,7 +61,9 @@ export function NavLinks({ userRole, onNavigate }: NavLinksProps) {
     <nav className="flex-1 px-4 py-4 space-y-1">
       {visibleItems.map((item) => {
         const Icon = item.icon
-        const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href + "/"))
+        const isActive =
+          pathname === item.href ||
+          (item.href !== "/dashboard" && pathname.startsWith(item.href + "/"))
         return (
           <Link
             key={item.href}

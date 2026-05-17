@@ -1,6 +1,12 @@
-import type { Role, Department, TicketStatus } from "@prisma/client"
+import type {
+  Role,
+  Department,
+  TicketStatus,
+  FootageRequestStatus,
+  RequestingParty,
+} from "@prisma/client"
 
-export type { Role, Department, TicketStatus }
+export type { Role, Department, TicketStatus, FootageRequestStatus, RequestingParty }
 
 export interface UserWithRelations {
   id: string
@@ -83,6 +89,38 @@ export interface TicketHistoryEntry {
   statusTo: TicketStatus | null
   cost: string | null
   createdAt: string | Date
+}
+
+export interface FootageRequestUser {
+  id: string
+  firstName: string
+  lastName: string
+}
+
+export interface FootageRequestLocation {
+  id: string
+  name: string
+  locationNumber: string
+}
+
+export interface FootageRequestWithDetails {
+  id: string
+  locationId: string
+  location: FootageRequestLocation
+  startDateTime: string | Date
+  endDateTime: string | Date
+  cameraArea: string
+  requestingParty: RequestingParty
+  officerName: string | null
+  status: FootageRequestStatus
+  resolutionNote: string | null
+  resolvedById: string | null
+  resolvedBy: FootageRequestUser | null
+  resolvedAt: string | Date | null
+  createdById: string
+  createdBy: FootageRequestUser
+  createdAt: string | Date
+  updatedAt: string | Date
 }
 
 export interface TicketWithDetails {
