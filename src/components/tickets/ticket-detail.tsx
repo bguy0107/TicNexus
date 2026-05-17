@@ -37,7 +37,6 @@ const STATUS_OPTIONS: { value: TicketStatus; label: string }[] = [
   { value: "MONITORING", label: "Monitoring" },
   { value: "AWAITING_APPROVAL", label: "Awaiting Approval" },
   { value: "APPROVED", label: "Approved" },
-  { value: "PROJECTED", label: "Projected" },
   { value: "CLOSED", label: "Closed" },
 ]
 
