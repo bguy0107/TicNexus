@@ -70,7 +70,7 @@ model User {
   firstName     String     @default("")
   lastName      String     @default("")
   role          Role       @default(STORE_USER)
-  departments   Department[]
+  departments   Department[]  @default([])
   deletedAt           DateTime?
   createdById         String?
   mustChangePassword  Boolean   @default(false)
