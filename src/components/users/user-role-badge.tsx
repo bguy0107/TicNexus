@@ -2,10 +2,10 @@ import { getRoleLabel } from "@/lib/permissions"
 import type { Role } from "@prisma/client"
 
 const roleColors: Record<Role, string> = {
-  ADMIN: "bg-red-500/20 text-red-400 border-red-500/30",
-  FRANCHISE_MANAGER: "bg-blue-500/20 text-blue-400 border-blue-500/30",
-  SUPERVISOR: "bg-purple-500/20 text-purple-400 border-purple-500/30",
-  TECHNICIAN: "bg-amber-500/20 text-amber-400 border-amber-500/30",
+  ADMIN: "bg-red-100 text-red-700 border-red-300 dark:bg-red-900 dark:text-red-300 dark:border-red-700",
+  FRANCHISE_MANAGER: "bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900 dark:text-blue-300 dark:border-blue-700",
+  SUPERVISOR: "bg-purple-100 text-purple-700 border-purple-300 dark:bg-purple-900 dark:text-purple-300 dark:border-purple-700",
+  TECHNICIAN: "bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900 dark:text-amber-300 dark:border-amber-700",
   STORE_USER: "bg-secondary text-secondary-foreground border-border",
 }
 

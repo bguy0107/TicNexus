@@ -75,6 +75,13 @@ const config = {
       },
     },
   },
+  safelist: [
+    {
+      pattern:
+        /^(bg|text|border)-(red|amber|yellow|purple|pink|green|blue|slate|cyan|orange)-(100|300|700|900)$/,
+      variants: ["dark"],
+    },
+  ],
   plugins: [require("tailwindcss-animate")],
 } satisfies Config
 

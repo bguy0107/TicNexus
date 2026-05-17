@@ -9,9 +9,9 @@ const STATUS_LABELS: Record<FootageRequestStatus, string> = {
 }
 
 const STATUS_CLASSES: Record<FootageRequestStatus, string> = {
-  PENDING: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
-  FULFILLED: "bg-green-500/10 text-green-400 border-green-500/20",
-  DENIED: "bg-red-500/10 text-red-400 border-red-500/20",
+  PENDING: "bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900 dark:text-amber-300 dark:border-amber-700",
+  FULFILLED: "bg-green-100 text-green-700 border-green-300 dark:bg-green-900 dark:text-green-300 dark:border-green-700",
+  DENIED: "bg-red-100 text-red-700 border-red-300 dark:bg-red-900 dark:text-red-300 dark:border-red-700",
 }
 
 export function FootageRequestStatusBadge({ status }: { status: FootageRequestStatus }) {
@@ -31,8 +31,8 @@ const PARTY_LABELS: Record<RequestingParty, string> = {
 }
 
 const PARTY_CLASSES: Record<RequestingParty, string> = {
-  LAW_ENFORCEMENT: "bg-blue-500/10 text-blue-400 border-blue-500/20",
-  INTERNAL: "bg-purple-500/10 text-purple-400 border-purple-500/20",
+  LAW_ENFORCEMENT: "bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900 dark:text-blue-300 dark:border-blue-700",
+  INTERNAL: "bg-purple-100 text-purple-700 border-purple-300 dark:bg-purple-900 dark:text-purple-300 dark:border-purple-700",
 }
 
 export function FootageRequestPartyBadge({ party }: { party: RequestingParty }) {

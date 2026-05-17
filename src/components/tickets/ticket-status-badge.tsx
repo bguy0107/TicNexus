@@ -14,14 +14,14 @@ const STATUS_LABELS: Record<TicketStatus, string> = {
 }
 
 const STATUS_CLASSES: Record<TicketStatus, string> = {
-  OPEN: "bg-red-500/10 text-red-400 border-red-500/20",
-  IN_PROGRESS: "bg-orange-500/10 text-orange-400 border-orange-500/20",
-  ORDERED: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
-  MONITORING: "bg-purple-500/10 text-purple-400 border-purple-500/20",
-  AWAITING_APPROVAL: "bg-pink-500/10 text-pink-400 border-pink-500/20",
-  APPROVED: "bg-white/10 text-white border-white/20",
-  PROJECTED: "bg-blue-500/10 text-blue-400 border-blue-500/20",
-  CLOSED: "bg-green-500/10 text-green-400 border-green-500/20",
+  OPEN: "bg-red-100 text-red-700 border-red-300 dark:bg-red-900 dark:text-red-300 dark:border-red-700",
+  IN_PROGRESS: "bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900 dark:text-amber-300 dark:border-amber-700",
+  ORDERED: "bg-yellow-100 text-yellow-700 border-yellow-300 dark:bg-yellow-900 dark:text-yellow-300 dark:border-yellow-700",
+  MONITORING: "bg-purple-100 text-purple-700 border-purple-300 dark:bg-purple-900 dark:text-purple-300 dark:border-purple-700",
+  AWAITING_APPROVAL: "bg-pink-100 text-pink-700 border-pink-300 dark:bg-pink-900 dark:text-pink-300 dark:border-pink-700",
+  APPROVED: "bg-green-100 text-green-700 border-green-300 dark:bg-green-900 dark:text-green-300 dark:border-green-700",
+  PROJECTED: "bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900 dark:text-blue-300 dark:border-blue-700",
+  CLOSED: "bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-700",
 }
 
 export function TicketStatusBadge({ status }: { status: TicketStatus }) {
@@ -41,8 +41,8 @@ const DEPARTMENT_LABELS: Record<Department, string> = {
 }
 
 const DEPARTMENT_CLASSES: Record<Department, string> = {
-  IT: "bg-cyan-500/10 text-cyan-400 border-cyan-500/20",
-  MAINTENANCE: "bg-orange-500/10 text-orange-400 border-orange-500/20",
+  IT: "bg-cyan-100 text-cyan-700 border-cyan-300 dark:bg-cyan-900 dark:text-cyan-300 dark:border-cyan-700",
+  MAINTENANCE: "bg-orange-100 text-orange-700 border-orange-300 dark:bg-orange-900 dark:text-orange-300 dark:border-orange-700",
 }
 
 export function TicketDepartmentBadge({ department }: { department: Department }) {
