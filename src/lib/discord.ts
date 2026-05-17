@@ -28,7 +28,9 @@ export async function notifyTicketCreated({
   const ticketUrl = `${appUrl}/dashboard/tickets/${ticketId}`
   const label = type === "IT" ? "IT" : "Maintenance"
 
-  const payload = {
+  const payload: Record<string, unknown> = {
+    ...(type === "IT" && process.env.DISCORD_ROLE_IT && { content: `<@&${process.env.DISCORD_ROLE_IT}>` }),
+    ...(type === "MAINTENANCE" && process.env.DISCORD_ROLE_MAINTENANCE && { content: `<@&${process.env.DISCORD_ROLE_MAINTENANCE}>` }),
     embeds: [
       {
         title: `New ${label} Ticket Opened`,
