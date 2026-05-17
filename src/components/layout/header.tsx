@@ -18,7 +18,7 @@ import { getInitials } from "@/lib/utils"
 import { getRoleLabel } from "@/lib/permissions"
 import { NavLinks } from "./nav-links"
 import { ProfileDialog } from "@/components/users/profile-dialog"
-import type { Role } from "@prisma/client"
+import type { Role, Department } from "@prisma/client"
 
 interface HeaderProps {
   firstName: string
@@ -26,9 +26,10 @@ interface HeaderProps {
   email: string
   role: Role
   image: string | null
+  departments: Department[]
 }
 
-export function Header({ firstName, lastName, email, role, image }: HeaderProps) {
+export function Header({ firstName, lastName, email, role, image, departments }: HeaderProps) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
@@ -101,7 +102,7 @@ export function Header({ firstName, lastName, email, role, image }: HeaderProps)
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <ProfileDialog open={profileOpen} onOpenChange={setProfileOpen} />
+      <ProfileDialog open={profileOpen} onOpenChange={setProfileOpen} departments={departments} />
     </header>
   )
 }

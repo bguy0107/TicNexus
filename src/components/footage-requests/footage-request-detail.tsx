@@ -209,6 +209,12 @@ export function FootageRequestDetail({ requestId }: FootageRequestDetailProps) {
               <p>{footageRequest.officerName}</p>
             </div>
           )}
+          {footageRequest.requestingParty === "INTERNAL" && footageRequest.internalContact && (
+            <div className="col-span-2">
+              <p className="text-muted-foreground text-xs mb-1">Internal contact / comments</p>
+              <p className="whitespace-pre-wrap">{footageRequest.internalContact}</p>
+            </div>
+          )}
         </div>
 
         <Separator />

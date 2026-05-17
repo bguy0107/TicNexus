@@ -3,7 +3,7 @@ import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { redirect } from "next/navigation"
 import { db } from "@/lib/db"
-import type { Role } from "@prisma/client"
+import type { Role, Department } from "@prisma/client"
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await requireAuth()
@@ -18,12 +18,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
     redirect("/change-password")
   }
 
-  const { firstName, lastName, email, role, image } = session.user as {
+  const { firstName, lastName, email, role, image, departments } = session.user as {
     firstName: string
     lastName: string
     email: string
     role: Role
     image?: string | null
+    departments: Department[]
   }
 
   return (
@@ -36,6 +37,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           email={email}
           role={role}
           image={image ?? null}
+          departments={departments}
         />
         <main className="flex-1 p-6">{children}</main>
       </div>

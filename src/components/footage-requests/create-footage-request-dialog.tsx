@@ -42,6 +42,7 @@ export function CreateFootageRequestDialog({
     cameraArea: "",
     requestingParty: "",
     officerName: "",
+    internalContact: "",
   })
 
   useEffect(() => {
@@ -52,6 +53,7 @@ export function CreateFootageRequestDialog({
   }, [open])
 
   const isLawEnforcement = form.requestingParty === "LAW_ENFORCEMENT"
+  const isInternal = form.requestingParty === "INTERNAL"
 
   const isValid =
     form.locationId &&
@@ -59,7 +61,8 @@ export function CreateFootageRequestDialog({
     form.endDateTime &&
     form.cameraArea.trim() &&
     form.requestingParty &&
-    (!isLawEnforcement || form.officerName.trim())
+    (!isLawEnforcement || form.officerName.trim()) &&
+    (!isInternal || form.internalContact.trim())
 
   const handleSubmit = async () => {
     if (!isValid) return
@@ -75,6 +78,7 @@ export function CreateFootageRequestDialog({
         cameraArea: form.cameraArea.trim(),
         requestingParty: form.requestingParty,
         officerName: isLawEnforcement ? form.officerName.trim() : undefined,
+        internalContact: isInternal ? form.internalContact.trim() : undefined,
       }),
     })
 
@@ -89,6 +93,7 @@ export function CreateFootageRequestDialog({
         cameraArea: "",
         requestingParty: "",
         officerName: "",
+        internalContact: "",
       })
       onOpenChange(false)
       onSuccess()
@@ -161,7 +166,9 @@ export function CreateFootageRequestDialog({
             <Label>Requesting party</Label>
             <Select
               value={form.requestingParty}
-              onValueChange={(v) => setForm({ ...form, requestingParty: v, officerName: "" })}
+              onValueChange={(v) =>
+                setForm({ ...form, requestingParty: v, officerName: "", internalContact: "" })
+              }
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select party" />
@@ -182,6 +189,22 @@ export function CreateFootageRequestDialog({
                 placeholder="Officer name or contact"
                 value={form.officerName}
                 onChange={(e) => setForm({ ...form, officerName: e.target.value })}
+              />
+            </div>
+          )}
+
+          {isInternal && (
+            <div className="space-y-2">
+              <Label>
+                Internal contact / comments <span className="text-destructive">*</span>
+              </Label>
+              <textarea
+                placeholder="Who is requesting this footage and why?"
+                value={form.internalContact}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                  setForm({ ...form, internalContact: e.target.value })
+                }
+                className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
               />
             </div>
           )}

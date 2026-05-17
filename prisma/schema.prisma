@@ -270,9 +270,10 @@ model FootageRequest {
   startDateTime   DateTime
   endDateTime     DateTime
   cameraArea      String
-  requestingParty RequestingParty
-  officerName     String?
-  status          FootageRequestStatus @default(PENDING)
+  requestingParty  RequestingParty
+  officerName      String?
+  internalContact  String?
+  status           FootageRequestStatus @default(PENDING)
   resolutionNote  String?
   resolvedById    String?
   resolvedAt      DateTime?

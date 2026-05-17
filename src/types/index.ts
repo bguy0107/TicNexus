@@ -112,6 +112,7 @@ export interface FootageRequestWithDetails {
   cameraArea: string
   requestingParty: RequestingParty
   officerName: string | null
+  internalContact: string | null
   status: FootageRequestStatus
   resolutionNote: string | null
   resolvedById: string | null

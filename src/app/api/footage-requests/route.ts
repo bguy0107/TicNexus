@@ -48,6 +48,7 @@ const createSchema = z
     cameraArea: z.string().min(1),
     requestingParty: z.enum(["LAW_ENFORCEMENT", "INTERNAL"]),
     officerName: z.string().optional(),
+    internalContact: z.string().optional(),
   })
   .superRefine((data, ctx) => {
     if (data.requestingParty === "LAW_ENFORCEMENT" && !data.officerName?.trim()) {
@@ -55,6 +56,13 @@ const createSchema = z
         code: z.ZodIssueCode.custom,
         message: "Officer name is required for law enforcement requests",
         path: ["officerName"],
+      })
+    }
+    if (data.requestingParty === "INTERNAL" && !data.internalContact?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Internal contact / comments is required for internal requests",
+        path: ["internalContact"],
       })
     }
     if (new Date(data.endDateTime) <= new Date(data.startDateTime)) {
@@ -107,6 +115,7 @@ export async function POST(request: NextRequest) {
       cameraArea: parsed.data.cameraArea,
       requestingParty: parsed.data.requestingParty,
       officerName: parsed.data.officerName?.trim() || null,
+      internalContact: parsed.data.internalContact?.trim() || null,
       createdById: session.user.id,
     },
     include: FOOTAGE_INCLUDE,

@@ -18,7 +18,12 @@ import { useToast } from "@/components/ui/use-toast"
 import { getInitials } from "@/lib/utils"
 import { getRoleLabel } from "@/lib/permissions"
 import { authClient } from "@/lib/auth-client"
-import type { Role } from "@prisma/client"
+import type { Role, Department } from "@prisma/client"
+
+const DEPARTMENT_LABELS: Record<Department, string> = {
+  IT: "IT",
+  MAINTENANCE: "Maintenance",
+}
 
 interface ProfileData {
   id: string
@@ -33,6 +38,7 @@ interface ProfileData {
 interface ProfileDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  departments: Department[]
 }
 
 function formatPhone(digits: string): string {
@@ -44,7 +50,7 @@ function formatPhone(digits: string): string {
 
 const emptyPwForm = { current: "", next: "", confirm: "" }
 
-export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
+export function ProfileDialog({ open, onOpenChange, departments }: ProfileDialogProps) {
   const { toast } = useToast()
   const { theme, setTheme } = useTheme()
   const [profile, setProfile] = useState<ProfileData | null>(null)
@@ -261,6 +267,15 @@ export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
                   <Label className="text-muted-foreground text-xs">Role</Label>
                   <p className="text-sm font-medium">{getRoleLabel(profile.role)}</p>
                 </div>
+
+                {profile.role === "TECHNICIAN" && departments.length > 0 && (
+                  <div className="space-y-1.5">
+                    <Label className="text-muted-foreground text-xs">Department(s)</Label>
+                    <p className="text-sm font-medium">
+                      {departments.map((d) => DEPARTMENT_LABELS[d]).join(", ")}
+                    </p>
+                  </div>
+                )}
 
                 {/* Editable phone */}
                 <div className="space-y-1.5">
