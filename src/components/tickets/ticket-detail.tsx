@@ -554,9 +554,9 @@ export function TicketDetail({ ticketId }: TicketDetailProps) {
 
         {/* Approve / Project buttons — shown for AWAITING_APPROVAL tickets */}
         {canApprove && ticket.status === "AWAITING_APPROVAL" && (
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-lg border border-orange-500/40 bg-orange-500/10 px-4 py-3">
             <div className="flex-1">
-              <p className="text-sm font-medium text-amber-400">This ticket is awaiting approval</p>
+              <p className="text-sm font-medium text-orange-600 dark:text-orange-400">This ticket is awaiting approval</p>
               <p className="text-xs text-muted-foreground mt-0.5">
                 Review the cost in the history below before taking action.
               </p>
@@ -638,11 +638,11 @@ export function TicketDetail({ ticketId }: TicketDetailProps) {
                 key={entry.id}
                 className={cn(
                   "flex gap-3",
-                  isAwaitingApproval && "bg-amber-500/10 border border-amber-500/30 rounded-lg p-3"
+                  isAwaitingApproval && "bg-orange-500/10 border border-orange-500/40 rounded-lg p-3"
                 )}
               >
                 {isAwaitingApproval ? (
-                  <AlertTriangle className="h-4 w-4 text-amber-400 mt-0.5 flex-shrink-0" />
+                  <AlertTriangle className="h-4 w-4 text-orange-600 dark:text-orange-400 mt-0.5 flex-shrink-0" />
                 ) : (
                   <div className="w-2 h-2 rounded-full bg-border mt-2 flex-shrink-0" />
                 )}
@@ -674,7 +674,7 @@ export function TicketDetail({ ticketId }: TicketDetailProps) {
                   )}
 
                   {entry.cost && (
-                    <p className="text-sm font-semibold text-amber-400">
+                    <p className="text-sm font-semibold text-orange-600 dark:text-orange-400">
                       Cost: ${parseFloat(entry.cost).toFixed(2)}
                     </p>
                   )}

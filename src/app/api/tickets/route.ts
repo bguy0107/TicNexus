@@ -5,6 +5,7 @@ import { createAuditLog } from "@/lib/audit"
 import { hasPermission } from "@/lib/permissions"
 import { getTicketLocationIds } from "@/lib/scope"
 import { getIpFromRequest } from "@/lib/utils"
+import { notifyTicketCreated } from "@/lib/discord"
 import { z } from "zod"
 import path from "path"
 import fs from "fs/promises"
@@ -153,6 +154,14 @@ export async function POST(request: NextRequest) {
     entityId: ticket.id,
     changes: { type: ticket.type, locationId: ticket.locationId, status: ticket.status },
     ipAddress: getIpFromRequest(request),
+  })
+
+  notifyTicketCreated({
+    type: ticket.type,
+    ticketId: ticket.id,
+    issue: ticket.issue,
+    locationName: `${ticket.location.name} #${ticket.location.locationNumber}`,
+    createdByName: `${ticket.createdBy.firstName} ${ticket.createdBy.lastName}`,
   })
 
   return NextResponse.json(ticket, { status: 201 })
