@@ -430,6 +430,150 @@ async function seed() {
     }
   }
 
+  // ── Footage Requests ─────────────────────────────────────────────────────────
+  console.log("\nSeeding footage requests...")
+
+  const existingFootageCount = await db.footageRequest.count()
+  if (existingFootageCount > 0) {
+    console.log(`  skip  footage requests (${existingFootageCount} already exist)`)
+  } else {
+    const userByEmail = async (email: string) => {
+      const u = await db.user.findUnique({ where: { email } })
+      if (!u) throw new Error(`User not found: ${email}`)
+      return u
+    }
+    const locationByName = async (name: string) => {
+      const l = await db.location.findFirst({ where: { name, deletedAt: null } })
+      if (!l) throw new Error(`Location not found: ${name}`)
+      return l
+    }
+
+    const storeUser = await userByEmail("store@ticnexus.com")
+    const sup1 = await userByEmail("supervisor1@ticnexus.com")
+    const sup2 = await userByEmail("supervisor2@ticnexus.com")
+    const tech1 = await userByEmail("tech1@ticnexus.com")
+    const fm1 = await userByEmail("franchise@ticnexus.com")
+
+    const loc1A = await locationByName("Location 1A")
+    const loc1B = await locationByName("Location 1B")
+    const loc2A = await locationByName("Location 2A")
+    const loc2B = await locationByName("Location 2B")
+
+    const now = new Date()
+    const daysAgo = (d: number) => new Date(now.getTime() - d * 24 * 60 * 60 * 1000)
+
+    const footageDefs = [
+      // PENDING — internal request, store user submitted
+      {
+        locationId: loc1B.id,
+        startDateTime: daysAgo(3),
+        endDateTime: new Date(daysAgo(3).getTime() + 2 * 60 * 60 * 1000),
+        cameraArea: "Front entrance camera",
+        requestingParty: "INTERNAL" as const,
+        officerName: null,
+        status: "PENDING" as const,
+        createdById: storeUser.id,
+        resolvedById: null,
+        resolvedAt: null,
+        resolutionNote: null,
+      },
+      // PENDING — law enforcement, supervisor submitted
+      {
+        locationId: loc1A.id,
+        startDateTime: daysAgo(1),
+        endDateTime: new Date(daysAgo(1).getTime() + 4 * 60 * 60 * 1000),
+        cameraArea: "Parking lot — northwest corner",
+        requestingParty: "LAW_ENFORCEMENT" as const,
+        officerName: "Officer J. Martinez",
+        status: "PENDING" as const,
+        createdById: sup1.id,
+        resolvedById: null,
+        resolvedAt: null,
+        resolutionNote: null,
+      },
+      // PENDING — law enforcement, FM submitted
+      {
+        locationId: loc2A.id,
+        startDateTime: daysAgo(2),
+        endDateTime: new Date(daysAgo(2).getTime() + 1 * 60 * 60 * 1000),
+        cameraArea: "Register area — cameras 1 and 2",
+        requestingParty: "LAW_ENFORCEMENT" as const,
+        officerName: "Detective R. Nguyen",
+        status: "PENDING" as const,
+        createdById: fm1.id,
+        resolvedById: null,
+        resolvedAt: null,
+        resolutionNote: null,
+      },
+      // FULFILLED — internal, resolved by IT tech
+      {
+        locationId: loc1A.id,
+        startDateTime: daysAgo(10),
+        endDateTime: new Date(daysAgo(10).getTime() + 3 * 60 * 60 * 1000),
+        cameraArea: "Back stock room",
+        requestingParty: "INTERNAL" as const,
+        officerName: null,
+        status: "FULFILLED" as const,
+        createdById: sup1.id,
+        resolvedById: tech1.id,
+        resolvedAt: daysAgo(8),
+        resolutionNote: "Footage exported to USB and handed to supervisor. Clip covers 9am–12pm.",
+      },
+      // FULFILLED — law enforcement, resolved by supervisor
+      {
+        locationId: loc2B.id,
+        startDateTime: daysAgo(7),
+        endDateTime: new Date(daysAgo(7).getTime() + 2 * 60 * 60 * 1000),
+        cameraArea: "Drive-through lane",
+        requestingParty: "LAW_ENFORCEMENT" as const,
+        officerName: "Sgt. T. Williams",
+        status: "FULFILLED" as const,
+        createdById: sup2.id,
+        resolvedById: sup2.id,
+        resolvedAt: daysAgo(6),
+        resolutionNote:
+          "Footage provided directly to Sgt. Williams via secure transfer. Case #2024-0871.",
+      },
+      // DENIED — internal, denied by FM
+      {
+        locationId: loc2A.id,
+        startDateTime: daysAgo(14),
+        endDateTime: new Date(daysAgo(14).getTime() + 8 * 60 * 60 * 1000),
+        cameraArea: "All interior cameras",
+        requestingParty: "INTERNAL" as const,
+        officerName: null,
+        status: "DENIED" as const,
+        createdById: storeUser.id,
+        resolvedById: fm1.id,
+        resolvedAt: daysAgo(13),
+        resolutionNote:
+          "Request too broad — covers 8 hours across all cameras. Resubmit with a specific time window and camera.",
+      },
+      // FULFILLED — law enforcement, resolved by IT tech
+      {
+        locationId: loc1B.id,
+        startDateTime: daysAgo(20),
+        endDateTime: new Date(daysAgo(20).getTime() + 1 * 60 * 60 * 1000),
+        cameraArea: "Front entrance and side door",
+        requestingParty: "LAW_ENFORCEMENT" as const,
+        officerName: "Officer P. Chen",
+        status: "FULFILLED" as const,
+        createdById: sup1.id,
+        resolvedById: tech1.id,
+        resolvedAt: daysAgo(19),
+        resolutionNote: "Footage burned to DVD and given to Officer Chen. Receipt signed.",
+      },
+    ]
+
+    for (const def of footageDefs) {
+      await db.footageRequest.create({ data: def })
+      const partyLabel = def.requestingParty === "LAW_ENFORCEMENT" ? "LAW" : "INT"
+      console.log(
+        `  created [${def.status.padEnd(9)}] [${partyLabel}] ${def.cameraArea.slice(0, 40)}`
+      )
+    }
+  }
+
   console.log("\nDone.")
 }
 
