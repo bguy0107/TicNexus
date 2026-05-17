@@ -155,7 +155,7 @@ export function FootageRequestDetail({ requestId }: FootageRequestDetailProps) {
         </DialogContent>
       </Dialog>
 
-      <div className="space-y-6 max-w-2xl">
+      <div className="space-y-4 max-w-2xl">
         <Button variant="ghost" size="sm" className="gap-1 -ml-1" onClick={() => router.back()}>
           <ArrowLeft className="h-4 w-4" />
           Back
@@ -174,45 +174,64 @@ export function FootageRequestDetail({ requestId }: FootageRequestDetailProps) {
         </div>
 
         {/* Meta grid */}
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <p className="text-muted-foreground text-xs mb-1">Location</p>
-            <p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+          <div className="min-w-0">
+            <p className="text-muted-foreground text-xs mb-0.5">Location</p>
+            <p className="break-words">
               {footageRequest.location.locationNumber} — {footageRequest.location.name}
             </p>
           </div>
-          <div>
-            <p className="text-muted-foreground text-xs mb-1">Submitted by</p>
-            <p>
+          <div className="min-w-0">
+            <p className="text-muted-foreground text-xs mb-0.5">Submitted by</p>
+            <p className="break-words">
               {footageRequest.createdBy.firstName} {footageRequest.createdBy.lastName}
             </p>
           </div>
-          <div>
-            <p className="text-muted-foreground text-xs mb-1">Footage start</p>
-            <p>{new Date(footageRequest.startDateTime).toLocaleString()}</p>
+          <div className="min-w-0">
+            <p className="text-muted-foreground text-xs mb-0.5">Footage start</p>
+            <p className="break-words">{new Date(footageRequest.startDateTime).toLocaleString()}</p>
           </div>
-          <div>
-            <p className="text-muted-foreground text-xs mb-1">Footage end</p>
-            <p>{new Date(footageRequest.endDateTime).toLocaleString()}</p>
+          <div className="min-w-0">
+            <p className="text-muted-foreground text-xs mb-0.5">Footage end</p>
+            <p className="break-words">{new Date(footageRequest.endDateTime).toLocaleString()}</p>
           </div>
-          <div>
-            <p className="text-muted-foreground text-xs mb-1">Camera / area</p>
-            <p>{footageRequest.cameraArea}</p>
+          <div className="min-w-0">
+            <p className="text-muted-foreground text-xs mb-0.5">Camera / area</p>
+            <p className="break-words">{footageRequest.cameraArea}</p>
           </div>
-          <div>
-            <p className="text-muted-foreground text-xs mb-1">Submitted</p>
-            <p>{formatDate(footageRequest.createdAt)}</p>
+          <div className="min-w-0">
+            <p className="text-muted-foreground text-xs mb-0.5">Submitted</p>
+            <p className="break-words">{formatDate(footageRequest.createdAt)}</p>
           </div>
           {footageRequest.requestingParty === "LAW_ENFORCEMENT" && footageRequest.officerName && (
-            <div className="col-span-2">
-              <p className="text-muted-foreground text-xs mb-1">Officer / contact</p>
-              <p>{footageRequest.officerName}</p>
+            <div className="min-w-0">
+              <p className="text-muted-foreground text-xs mb-0.5">Officer name</p>
+              <p className="break-words">{footageRequest.officerName}</p>
             </div>
           )}
-          {footageRequest.requestingParty === "INTERNAL" && footageRequest.internalContact && (
-            <div className="col-span-2">
-              <p className="text-muted-foreground text-xs mb-1">Internal contact / comments</p>
-              <p className="whitespace-pre-wrap">{footageRequest.internalContact}</p>
+          {footageRequest.requestingParty === "LAW_ENFORCEMENT" &&
+            footageRequest.officerContact && (
+              <div className="min-w-0 sm:col-span-2">
+                <p className="text-muted-foreground text-xs mb-0.5">Officer contact</p>
+                <p className="break-words">{footageRequest.officerContact}</p>
+              </div>
+            )}
+          {footageRequest.requestingParty === "LAW_ENFORCEMENT" && footageRequest.lookingFor && (
+            <div className="min-w-0 sm:col-span-2">
+              <p className="text-muted-foreground text-xs mb-0.5">What are we looking for?</p>
+              <p className="whitespace-pre-wrap break-words">{footageRequest.lookingFor}</p>
+            </div>
+          )}
+          {footageRequest.requestingParty === "INTERNAL" && footageRequest.sendTo && (
+            <div className="min-w-0 sm:col-span-2">
+              <p className="text-muted-foreground text-xs mb-0.5">Who should footage be sent to?</p>
+              <p className="break-words">{footageRequest.sendTo}</p>
+            </div>
+          )}
+          {footageRequest.requestingParty === "INTERNAL" && footageRequest.lookingFor && (
+            <div className="min-w-0 sm:col-span-2">
+              <p className="text-muted-foreground text-xs mb-0.5">What are we looking for?</p>
+              <p className="whitespace-pre-wrap break-words">{footageRequest.lookingFor}</p>
             </div>
           )}
         </div>
@@ -256,27 +275,27 @@ export function FootageRequestDetail({ requestId }: FootageRequestDetailProps) {
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
               Resolution
             </h2>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <p className="text-muted-foreground text-xs mb-1">Resolved by</p>
-                <p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+              <div className="min-w-0">
+                <p className="text-muted-foreground text-xs mb-0.5">Resolved by</p>
+                <p className="break-words">
                   {footageRequest.resolvedBy
                     ? `${footageRequest.resolvedBy.firstName} ${footageRequest.resolvedBy.lastName}`
                     : "—"}
                 </p>
               </div>
-              <div>
-                <p className="text-muted-foreground text-xs mb-1">Resolved at</p>
-                <p>
+              <div className="min-w-0">
+                <p className="text-muted-foreground text-xs mb-0.5">Resolved at</p>
+                <p className="break-words">
                   {footageRequest.resolvedAt
                     ? new Date(footageRequest.resolvedAt).toLocaleString()
                     : "—"}
                 </p>
               </div>
               {footageRequest.resolutionNote && (
-                <div className="col-span-2">
-                  <p className="text-muted-foreground text-xs mb-1">Note</p>
-                  <p>{footageRequest.resolutionNote}</p>
+                <div className="min-w-0 sm:col-span-2">
+                  <p className="text-muted-foreground text-xs mb-0.5">Note</p>
+                  <p className="break-words">{footageRequest.resolutionNote}</p>
                 </div>
               )}
             </div>

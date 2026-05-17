@@ -272,7 +272,10 @@ model FootageRequest {
   cameraArea      String
   requestingParty  RequestingParty
   officerName      String?
+  officerContact   String?
   internalContact  String?
+  sendTo           String?
+  lookingFor       String?
   status           FootageRequestStatus @default(PENDING)
   resolutionNote  String?
   resolvedById    String?

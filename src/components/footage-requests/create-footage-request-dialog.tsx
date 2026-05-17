@@ -41,8 +41,9 @@ export function CreateFootageRequestDialog({
     endDateTime: "",
     cameraArea: "",
     requestingParty: "",
-    officerName: "",
-    internalContact: "",
+    officerContact: "",
+    sendTo: "",
+    lookingFor: "",
   })
 
   useEffect(() => {
@@ -61,8 +62,8 @@ export function CreateFootageRequestDialog({
     form.endDateTime &&
     form.cameraArea.trim() &&
     form.requestingParty &&
-    (!isLawEnforcement || form.officerName.trim()) &&
-    (!isInternal || form.internalContact.trim())
+    (!isLawEnforcement || (form.officerContact.trim() && form.lookingFor.trim())) &&
+    (!isInternal || (form.sendTo.trim() && form.lookingFor.trim()))
 
   const handleSubmit = async () => {
     if (!isValid) return
@@ -77,8 +78,9 @@ export function CreateFootageRequestDialog({
         endDateTime: form.endDateTime,
         cameraArea: form.cameraArea.trim(),
         requestingParty: form.requestingParty,
-        officerName: isLawEnforcement ? form.officerName.trim() : undefined,
-        internalContact: isInternal ? form.internalContact.trim() : undefined,
+        officerContact: isLawEnforcement ? form.officerContact.trim() : undefined,
+        lookingFor: form.lookingFor.trim() || undefined,
+        sendTo: isInternal ? form.sendTo.trim() : undefined,
       }),
     })
 
@@ -92,8 +94,9 @@ export function CreateFootageRequestDialog({
         endDateTime: "",
         cameraArea: "",
         requestingParty: "",
-        officerName: "",
-        internalContact: "",
+        officerContact: "",
+        sendTo: "",
+        lookingFor: "",
       })
       onOpenChange(false)
       onSuccess()
@@ -109,12 +112,12 @@ export function CreateFootageRequestDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-w-[calc(100%-2rem)] rounded-lg sm:max-w-md">
         <DialogHeader>
           <DialogTitle>New footage request</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
           <div className="space-y-2">
             <Label>Location</Label>
             <Select
@@ -124,7 +127,11 @@ export function CreateFootageRequestDialog({
               <SelectTrigger>
                 <SelectValue placeholder="Select location" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent
+                position="popper"
+                sideOffset={4}
+                className="w-[var(--radix-select-trigger-width)]"
+              >
                 {locations.map((l) => (
                   <SelectItem key={l.id} value={l.id}>
                     {l.locationNumber} — {l.name}
@@ -167,7 +174,13 @@ export function CreateFootageRequestDialog({
             <Select
               value={form.requestingParty}
               onValueChange={(v) =>
-                setForm({ ...form, requestingParty: v, officerName: "", internalContact: "" })
+                setForm({
+                  ...form,
+                  requestingParty: v,
+                  officerContact: "",
+                  sendTo: "",
+                  lookingFor: "",
+                })
               }
             >
               <SelectTrigger>
@@ -181,32 +194,59 @@ export function CreateFootageRequestDialog({
           </div>
 
           {isLawEnforcement && (
-            <div className="space-y-2">
-              <Label>
-                Officer / contact name <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                placeholder="Officer name or contact"
-                value={form.officerName}
-                onChange={(e) => setForm({ ...form, officerName: e.target.value })}
-              />
-            </div>
+            <>
+              <div className="space-y-2">
+                <Label>
+                  Contact information of officer <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  placeholder="e.g. Badge #1234, (555) 123-4567"
+                  value={form.officerContact}
+                  onChange={(e) => setForm({ ...form, officerContact: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>
+                  What are we looking for? <span className="text-destructive">*</span>
+                </Label>
+                <textarea
+                  placeholder="Describe what to look for in the footage..."
+                  value={form.lookingFor}
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                    setForm({ ...form, lookingFor: e.target.value })
+                  }
+                  className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+                />
+              </div>
+            </>
           )}
 
           {isInternal && (
-            <div className="space-y-2">
-              <Label>
-                Internal contact / comments <span className="text-destructive">*</span>
-              </Label>
-              <textarea
-                placeholder="Who is requesting this footage and why?"
-                value={form.internalContact}
-                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                  setForm({ ...form, internalContact: e.target.value })
-                }
-                className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
-              />
-            </div>
+            <>
+              <div className="space-y-2">
+                <Label>
+                  Who should footage be sent to? <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  placeholder="e.g. John Smith, Loss Prevention"
+                  value={form.sendTo}
+                  onChange={(e) => setForm({ ...form, sendTo: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>
+                  What are we looking for? <span className="text-destructive">*</span>
+                </Label>
+                <textarea
+                  placeholder="Describe what to look for in the footage..."
+                  value={form.lookingFor}
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                    setForm({ ...form, lookingFor: e.target.value })
+                  }
+                  className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+                />
+              </div>
+            </>
           )}
         </div>
 

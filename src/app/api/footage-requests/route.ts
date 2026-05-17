@@ -5,6 +5,7 @@ import { createAuditLog } from "@/lib/audit"
 import { hasPermission } from "@/lib/permissions"
 import { getFootageLocationIds } from "@/lib/scope"
 import { getIpFromRequest } from "@/lib/utils"
+import { notifyFootageRequestCreated } from "@/lib/discord"
 import { z } from "zod"
 import type { Role } from "@prisma/client"
 
@@ -48,21 +49,37 @@ const createSchema = z
     cameraArea: z.string().min(1),
     requestingParty: z.enum(["LAW_ENFORCEMENT", "INTERNAL"]),
     officerName: z.string().optional(),
-    internalContact: z.string().optional(),
+    officerContact: z.string().optional(),
+    sendTo: z.string().optional(),
+    lookingFor: z.string().optional(),
   })
   .superRefine((data, ctx) => {
-    if (data.requestingParty === "LAW_ENFORCEMENT" && !data.officerName?.trim()) {
+    if (data.requestingParty === "LAW_ENFORCEMENT" && !data.officerContact?.trim()) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Officer name is required for law enforcement requests",
-        path: ["officerName"],
+        message: "Officer contact information is required for law enforcement requests",
+        path: ["officerContact"],
       })
     }
-    if (data.requestingParty === "INTERNAL" && !data.internalContact?.trim()) {
+    if (data.requestingParty === "LAW_ENFORCEMENT" && !data.lookingFor?.trim()) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Internal contact / comments is required for internal requests",
-        path: ["internalContact"],
+        message: "What to look for is required for law enforcement requests",
+        path: ["lookingFor"],
+      })
+    }
+    if (data.requestingParty === "INTERNAL" && !data.sendTo?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Who to send footage to is required for internal requests",
+        path: ["sendTo"],
+      })
+    }
+    if (data.requestingParty === "INTERNAL" && !data.lookingFor?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "What to look for is required for internal requests",
+        path: ["lookingFor"],
       })
     }
     if (new Date(data.endDateTime) <= new Date(data.startDateTime)) {
@@ -115,7 +132,9 @@ export async function POST(request: NextRequest) {
       cameraArea: parsed.data.cameraArea,
       requestingParty: parsed.data.requestingParty,
       officerName: parsed.data.officerName?.trim() || null,
-      internalContact: parsed.data.internalContact?.trim() || null,
+      officerContact: parsed.data.officerContact?.trim() || null,
+      sendTo: parsed.data.sendTo?.trim() || null,
+      lookingFor: parsed.data.lookingFor?.trim() || null,
       createdById: session.user.id,
     },
     include: FOOTAGE_INCLUDE,
@@ -132,6 +151,17 @@ export async function POST(request: NextRequest) {
       status: footageRequest.status,
     },
     ipAddress: getIpFromRequest(request),
+  })
+
+  notifyFootageRequestCreated({
+    requestId: footageRequest.id,
+    locationName: footageRequest.location.name,
+    createdByName: `${footageRequest.createdBy.firstName} ${footageRequest.createdBy.lastName}`,
+    requestingParty: footageRequest.requestingParty,
+    cameraArea: footageRequest.cameraArea,
+    officerContact: footageRequest.officerContact ?? undefined,
+    sendTo: footageRequest.sendTo ?? undefined,
+    lookingFor: footageRequest.lookingFor ?? undefined,
   })
 
   return NextResponse.json(footageRequest, { status: 201 })

@@ -464,7 +464,7 @@ export function TicketDetail({ ticketId }: TicketDetailProps) {
         </DialogContent>
       </Dialog>
 
-      <div className="space-y-6 max-w-2xl">
+      <div className="space-y-4 max-w-2xl">
         {/* Back */}
         <Button variant="ghost" size="sm" className="gap-1 -ml-1" onClick={() => router.back()}>
           <ArrowLeft className="h-4 w-4" />
@@ -481,26 +481,26 @@ export function TicketDetail({ ticketId }: TicketDetailProps) {
         </div>
 
         {/* Meta grid */}
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <p className="text-muted-foreground text-xs mb-1">Location</p>
-            <p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+          <div className="min-w-0">
+            <p className="text-muted-foreground text-xs mb-0.5">Location</p>
+            <p className="break-words">
               {ticket.location.locationNumber} — {ticket.location.name}
             </p>
           </div>
-          <div>
-            <p className="text-muted-foreground text-xs mb-1">Opened by</p>
-            <p>
+          <div className="min-w-0">
+            <p className="text-muted-foreground text-xs mb-0.5">Opened by</p>
+            <p className="break-words">
               {ticket.createdBy.firstName} {ticket.createdBy.lastName}
             </p>
           </div>
-          <div>
-            <p className="text-muted-foreground text-xs mb-1">Created</p>
-            <p>{formatDate(ticket.createdAt)}</p>
+          <div className="min-w-0">
+            <p className="text-muted-foreground text-xs mb-0.5">Created</p>
+            <p className="break-words">{formatDate(ticket.createdAt)}</p>
           </div>
-          <div>
-            <p className="text-muted-foreground text-xs mb-1">Deadline</p>
-            <p>{ticket.deadline ? formatDate(ticket.deadline) : "—"}</p>
+          <div className="min-w-0">
+            <p className="text-muted-foreground text-xs mb-0.5">Deadline</p>
+            <p className="break-words">{ticket.deadline ? formatDate(ticket.deadline) : "—"}</p>
             {canAdjustDeadline && (
               <Button
                 size="sm"
@@ -556,7 +556,9 @@ export function TicketDetail({ ticketId }: TicketDetailProps) {
         {canApprove && ticket.status === "AWAITING_APPROVAL" && (
           <div className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-lg border border-orange-500/40 bg-orange-500/10 px-4 py-3">
             <div className="flex-1">
-              <p className="text-sm font-medium text-orange-600 dark:text-orange-400">This ticket is awaiting approval</p>
+              <p className="text-sm font-medium text-orange-600 dark:text-orange-400">
+                This ticket is awaiting approval
+              </p>
               <p className="text-xs text-muted-foreground mt-0.5">
                 Review the cost in the history below before taking action.
               </p>
@@ -638,7 +640,8 @@ export function TicketDetail({ ticketId }: TicketDetailProps) {
                 key={entry.id}
                 className={cn(
                   "flex gap-3",
-                  isAwaitingApproval && "bg-orange-500/10 border border-orange-500/40 rounded-lg p-3"
+                  isAwaitingApproval &&
+                    "bg-orange-500/10 border border-orange-500/40 rounded-lg p-3"
                 )}
               >
                 {isAwaitingApproval ? (
