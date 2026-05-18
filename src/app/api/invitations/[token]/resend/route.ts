@@ -68,7 +68,16 @@ export async function POST(
   const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL}/invite/${newToken}`
   const inviterName = session.user.name ?? "TicNexus"
 
-  await sendInvitationEmail({ to: invitation.email, inviterName, role: invitation.role, inviteUrl })
+  try {
+    await sendInvitationEmail({
+      to: invitation.email,
+      inviterName,
+      role: invitation.role,
+      inviteUrl,
+    })
+  } catch (err) {
+    console.error("Failed to send invitation email:", err)
+  }
 
   await createAuditLog({
     actorId,

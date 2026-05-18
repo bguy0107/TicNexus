@@ -101,7 +101,11 @@ export async function POST(request: NextRequest) {
   const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL}/invite/${invitation.token}`
   const inviterName = `${session.user.name}`
 
-  await sendInvitationEmail({ to: email, inviterName, role, inviteUrl })
+  try {
+    await sendInvitationEmail({ to: email, inviterName, role, inviteUrl })
+  } catch (err) {
+    console.error("Failed to send invitation email:", err)
+  }
 
   await createAuditLog({
     actorId,
